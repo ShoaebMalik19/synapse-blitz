@@ -215,63 +215,214 @@ export function ruleBasedPlan(goal: string, budget: BudgetInput): ProposedPlan {
   };
 }
 
-const PLANNER_SYSTEM = `You are the SYNAPSE planner. Convert the user's research goal into a small DAG of tasks.
-Return ONLY JSON: {"summary": string, "tasks": [{"taskId": kebab-case, "title", "description", "dependencies": [taskId], "capability": "research"|"analysis"|"synthesis", "estimatedCostUsdc": number, "maxCostUsdc": number, "retryLimit": 0-3, "timeoutSec": 10-300, "verificationCriteria": [string]}]}
+const PLANNER_SYSTEM = `You are the SYNAPSE planner. Synapse runs research workflows about the Monad blockchain ecosystem using three capabilities:
+- "research": buys a Monad ecosystem dataset (~0.01 USDC via x402) and reads allowlisted public sources (Monad docs, Monad GitHub, Monad testnet RPC)
+- "analysis": turns research facts into cited insights and risks
+- "synthesis": writes one cited Markdown briefing
+Convert the user's goal into a small DAG of tasks whose titles and descriptions are specific to that goal.
+If the goal is NOT a research/analysis/briefing request about Monad or its ecosystem (for example moving funds, deploying contracts, trading, executing code, or an unrelated topic), return ONLY {"unsupported": true, "reason": "<one sentence>"}.
+Otherwise return ONLY JSON: {"summary": string, "tasks": [{"taskId": kebab-case, "title", "description", "dependencies": [taskId], "capability": "research"|"analysis"|"synthesis", "estimatedCostUsdc": number, "maxCostUsdc": number, "retryLimit": 0-3, "timeoutSec": 10-300, "verificationCriteria": [string]}]}
 Rules: 3-5 tasks. Exactly one "synthesis" task that depends (transitively) on all others. Every analysis task depends on a research task.
-Only research tasks may have non-zero cost (they buy a paid dataset at ~0.01 USDC via x402). Total estimated cost must not exceed the budget.
+Only research tasks may have non-zero cost. Total estimated cost must not exceed the budget; maxCostUsdc must not exceed the per-call cap.
 You cannot choose workers, URLs, wallets, or payment recipients; those are assigned by deterministic code.`;
 
-export async function llmChat(system: string, user: string, json = true): Promise<string> {
+/** Human-facing provider name derived from the OpenAI-compatible base URL. */
+export function llmProvider(): { id: string; name: string; model: string } {
   const e = env();
-  const res = await fetch(`${e.LLM_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${e.LLM_API_KEY}` },
-    body: JSON.stringify({
-      model: e.LLM_MODEL,
-      temperature: 0.3,
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
-  if (!res.ok) throw new Error(`LLM HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  let host = "";
+  try {
+    host = new URL(e.LLM_BASE_URL).hostname;
+  } catch {
+    host = e.LLM_BASE_URL;
+  }
+  const known: [RegExp, string, string][] = [
+    [/(^|\.)groq\.com$/, "groq", "Groq"],
+    [/(^|\.)openai\.com$/, "openai", "OpenAI"],
+    [/(^|\.)openrouter\.ai$/, "openrouter", "OpenRouter"],
+    [/(^|\.)together\.(ai|xyz)$/, "together", "Together"],
+  ];
+  const k = known.find(([re]) => re.test(host));
+  return { id: k?.[1] ?? host, name: k?.[2] ?? host, model: e.LLM_MODEL };
+}
+
+/** Provider/transport failure. Messages never include the API key. */
+export class LlmProviderError extends Error {
+  constructor(
+    message: string,
+    public status?: number,
+    public retryAfter?: string | null,
+  ) {
+    super(message);
+  }
+}
+/** Goal is outside what Synapse workers can execute (HTTP 422, nothing saved). */
+export class UnsupportedGoalError extends Error {}
+
+export interface LlmResult {
+  content: string;
+  responseId: string | null;
+  model: string | null;
+  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
+  latencyMs: number;
+}
+
+export async function llmChatDetailed(system: string, user: string, json = true): Promise<LlmResult> {
+  const e = env();
+  const p = llmProvider();
+  const started = Date.now();
+  let res: Response;
+  try {
+    res = await fetch(`${e.LLM_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${e.LLM_API_KEY}` },
+      body: JSON.stringify({
+        model: e.LLM_MODEL,
+        temperature: 0.3,
+        ...(json ? { response_format: { type: "json_object" } } : {}),
+        ...(e.LLM_REASONING_EFFORT ? { reasoning_effort: e.LLM_REASONING_EFFORT } : {}),
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch (err) {
+    const timedOut = (err as Error).name === "TimeoutError";
+    throw new LlmProviderError(`${p.name} request failed: ${timedOut ? "timed out after 60s" : (err as Error).message}`);
+  }
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = (await res.json()) as { error?: { message?: string; code?: string } };
+      detail = j.error?.message ?? j.error?.code ?? "";
+    } catch {
+      detail = "";
+    }
+    const hint =
+      res.status === 429
+        ? " (rate limited: wait and retry)"
+        : res.status === 401 || res.status === 403
+          ? " (check LLM_API_KEY)"
+          : res.status === 404
+            ? ` (model "${e.LLM_MODEL}" not available to this key; list models at ${e.LLM_BASE_URL}/models)`
+            : "";
+    throw new LlmProviderError(
+      `${p.name} HTTP ${res.status}${hint}${detail ? `: ${detail.slice(0, 200)}` : ""}`,
+      res.status,
+      res.headers.get("retry-after"),
+    );
+  }
+  const j = (await res.json()) as {
+    id?: string;
+    model?: string;
+    usage?: LlmResult["usage"];
+    choices?: { message?: { content?: string } }[];
+  };
   const content = j.choices?.[0]?.message?.content;
-  if (!content) throw new Error("LLM returned no content");
-  return content;
+  if (!content) throw new LlmProviderError(`${p.name} returned an empty completion`);
+  return { content, responseId: j.id ?? null, model: j.model ?? null, usage: j.usage ?? null, latencyMs: Date.now() - started };
+}
+
+export async function llmChat(system: string, user: string, json = true): Promise<string> {
+  return (await llmChatDetailed(system, user, json)).content;
 }
 
 export function llmConfigured() {
   return Boolean(env().LLM_API_KEY);
 }
 
+/** Deterministic pre-check: Synapse only researches and writes briefings; it never performs requested actions. */
+const ACTION_PATTERNS: [RegExp, string][] = [
+  [/\b(send|transfer|withdraw|bridge|swap|trade|stake|unstake)\b.*\b(mon|usdc|eth|tokens?|funds|money|crypto)\b/i, "moving or trading funds"],
+  [/\b(private key|seed phrase|mnemonic)\b/i, "handling wallet secrets"],
+  [/\b(deploy|mint|airdrop)\b/i, "deploying or minting on-chain"],
+  [/\b(run|execute)\b.*\b(shell|command|script|code)\b/i, "executing code"],
+];
+export function assertSupportedGoal(goal: string) {
+  for (const [re, what] of ACTION_PATTERNS)
+    if (re.test(goal))
+      throw new UnsupportedGoalError(
+        `Unsupported goal: Synapse workers only research and write cited briefings; they cannot perform ${what}. Rephrase it as a research question, e.g. "Analyze ...".`,
+      );
+}
+
+export interface PlanSource {
+  kind: "llm" | "rule-based";
+  provider: string | null;
+  model: string | null;
+  responseId: string | null;
+  usage: LlmResult["usage"];
+  latencyMs: number | null;
+  attempts: number;
+  fallbackReason: string | null;
+}
+
 export async function generatePlan(
   goal: string,
   budget: BudgetInput,
-): Promise<{ plan: Plan; planner: string; notes: string[] }> {
+): Promise<{ plan: Plan; planner: string; notes: string[]; source: PlanSource }> {
+  assertSupportedGoal(goal);
   const notes: string[] = [];
+  let fallbackReason: string | null = null;
+  let attempts = 0;
   if (llmConfigured()) {
+    const p = llmProvider();
     let feedback = "";
     for (let attempt = 1; attempt <= 2; attempt++) {
+      attempts = attempt;
+      let r: LlmResult;
       try {
-        const out = await llmChat(
+        r = await llmChatDetailed(
           PLANNER_SYSTEM,
           `Goal: ${goal}\nBudget: x402 total ${budget.x402Usdc} USDC, per call ${budget.perCallUsdc} USDC.${feedback}`,
         );
-        const plan = validatePlan(JSON.parse(out), budget);
-        return { plan, planner: `llm:${env().LLM_MODEL}`, notes };
+      } catch (err) {
+        // Provider errors (429, auth, timeouts) are not retried here, to avoid amplifying rate limits.
+        fallbackReason = (err as Error).message;
+        notes.push(`${p.name} unavailable: ${fallbackReason}`);
+        break;
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(r.content);
+      } catch {
+        fallbackReason = `${p.name} returned invalid JSON`;
+        notes.push(`${p.name} attempt ${attempt}: output was not valid JSON`);
+        feedback = "\nYour previous output was not valid JSON. Return ONLY the JSON object.";
+        continue;
+      }
+      const maybe = parsed as { unsupported?: boolean; reason?: string };
+      if (maybe?.unsupported === true) {
+        throw new UnsupportedGoalError(
+          `Unsupported goal: ${String(maybe.reason ?? "outside Synapse's Monad research capabilities").slice(0, 240)} Synapse plans research, analysis and briefings about the Monad ecosystem.`,
+        );
+      }
+      try {
+        const plan = validatePlan(parsed, budget);
+        const model = r.model ?? p.model;
+        return {
+          plan,
+          planner: `${p.id}:${model}`,
+          notes,
+          source: { kind: "llm", provider: p.name, model, responseId: r.responseId, usage: r.usage, latencyMs: r.latencyMs, attempts: attempt, fallbackReason: null },
+        };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        notes.push(`LLM plan attempt ${attempt} rejected: ${msg.slice(0, 300)}`);
+        fallbackReason = `${p.name} output failed DAG validation`;
+        notes.push(`${p.name} plan attempt ${attempt} rejected by validator: ${msg.slice(0, 300)}`);
         feedback = `\nYour previous plan was rejected: ${msg.slice(0, 500)}. Fix it.`;
       }
     }
-    notes.push("Falling back to rule-based planner after LLM plans failed validation.");
+    notes.push(`Used the deterministic rule-based planner instead (${fallbackReason}).`);
   } else {
+    fallbackReason = "no LLM_API_KEY configured";
     notes.push("No LLM_API_KEY configured: using deterministic rule-based planner.");
   }
-  return { plan: validatePlan(ruleBasedPlan(goal, budget), budget), planner: "rule-based", notes };
+  return {
+    plan: validatePlan(ruleBasedPlan(goal, budget), budget),
+    planner: "rule-based",
+    notes,
+    source: { kind: "rule-based", provider: null, model: null, responseId: null, usage: null, latencyMs: null, attempts, fallbackReason },
+  };
 }

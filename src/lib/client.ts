@@ -35,7 +35,7 @@ export interface NetworkStatus {
   operator: { address: string; explorer: string; balances: { monWei: string; usdcBase: string | null } | null; error: string | null } | null;
   escrow: { address: string | null; deployed: boolean; explorer: string | null };
   x402: { facilitator: string; network: string; asset: string; payTo: string | null; exactSupported: boolean; facilitatorError: string | null; service: { online: boolean; url: string; error?: string } };
-  llm: { configured: boolean; model: string | null };
+  llm: { configured: boolean; provider: string | null; model: string | null };
   policyDefaults: Budget;
 }
 export interface Budget {
@@ -122,6 +122,8 @@ export interface WorkflowDetail {
     goal: string;
     status: string;
     planner: string;
+    plannerSource: PlannerSource | null;
+    plannerNotes: string[];
     plan: { summary: string; totalEstimatedUsdc: number };
     planHash: string;
     settlementStatus: string;
@@ -202,4 +204,21 @@ export function paymentLabel(p: { status: string; status_reason: string | null }
     default:
       return { label: `${p.status} · PENDING`, charged: false, tone: "violet" };
   }
+}
+
+export interface PlannerSource {
+  kind: "llm" | "rule-based";
+  provider: string | null;
+  model: string | null;
+  responseId: string | null;
+  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
+  latencyMs: number | null;
+  attempts: number;
+  fallbackReason: string | null;
+}
+
+export function plannerLabel(planner: string, src: PlannerSource | null | undefined): string {
+  if (src?.kind === "llm") return `${src.provider} · ${src.model}`;
+  if (planner === "rule-based") return src?.fallbackReason ? "Rule-based fallback" : "Rule-based planner";
+  return planner;
 }

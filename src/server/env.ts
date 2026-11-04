@@ -28,6 +28,10 @@ const schema = z.object({
   LLM_API_KEY: z.string().optional().default(""),
   LLM_BASE_URL: z.string().default("https://api.openai.com/v1"),
   LLM_MODEL: z.string().default("gpt-4o-mini"),
+  LLM_REASONING_EFFORT: z
+    .enum(["low", "medium", "high"])
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 
   DATABASE_URL: z.string().default("file:./data/synapse.db"),
   SESSION_SECRET: z.string().optional().default(""),

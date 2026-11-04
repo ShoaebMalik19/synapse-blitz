@@ -5,7 +5,7 @@ import { env } from "./env";
 
 export type DB = Database.Database;
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const MIGRATIONS: string[] = [
   /* v1 */ `
@@ -173,6 +173,9 @@ const MIGRATIONS: string[] = [
     created_at INTEGER NOT NULL,
     fired_at INTEGER
   );
+  `,
+  /* v2: planner provenance per draft */ `
+  ALTER TABLE workflows ADD COLUMN planner_meta_json TEXT;
   `,
 ];
 

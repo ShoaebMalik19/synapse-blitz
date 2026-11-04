@@ -22,7 +22,7 @@ import {
 import { Dag } from "@/components/dag";
 import { Nav } from "@/components/nav";
 import { Badge, Button, ButtonLink, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge, cx } from "@/components/ui";
-import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, shortHash, type EventRow, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
+import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, plannerLabel, shortHash, type EventRow, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
 
 const levelColor = { info: "text-muted", warn: "text-warn", error: "text-bad", success: "text-ok" } as const;
 
@@ -107,7 +107,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
             <StatusBadge s={w.status} />
             <Badge t={w.settlementStatus === "SETTLED" ? "ok" : w.settlementStatus === "BLOCKED" || w.settlementStatus === "FAILED" ? "warn" : "muted"}>escrow {w.settlementStatus.replace(/_/g, " ")}</Badge>
             <span>{w.id}</span>
-            <span>planner: {w.planner}</span>
+            <Badge t={w.plannerSource?.kind === "llm" ? "blue" : "warn"}>planner: {plannerLabel(w.planner, w.plannerSource)}</Badge>
             <span title={w.planHash}>plan {shortHash(w.planHash, 4)}</span>
           </div>
         </div>
@@ -145,6 +145,13 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
+      {w.plannerNotes.length > 0 && w.status === "APPROVAL_REQUIRED" && (
+        <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+          {w.plannerNotes.map((n) => (
+            <div key={n}>{n}</div>
+          ))}
+        </div>
+      )}
       {w.status === "APPROVAL_REQUIRED" && (
         <Card className="border-violet/30">
           <CardHeader title="Approve plan & budget" icon={<CheckCircle2 className="size-4" />} sub={w.plan.summary} />

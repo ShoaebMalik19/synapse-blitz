@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { SESSION_COOKIE, verifySession } from "./auth";
 import { getWorkflow, HttpError } from "./workflows";
+import { UnsupportedGoalError } from "./planner";
 
 export const json = (data: unknown, status = 200) =>
   NextResponse.json(data, { status, headers: { "cache-control": "no-store" } });
@@ -29,7 +30,9 @@ export function handle<T extends unknown[]>(fn: (...args: T) => Promise<Response
       return await fn(...args);
     } catch (err) {
       if (err instanceof HttpError) return json({ error: err.message }, err.status);
-      if (err instanceof ZodError) return json({ error: "invalid request", issues: err.issues.map((i) => `${i.path.join(".")}: ${i.message}`) }, 400);
+      if (err instanceof UnsupportedGoalError) return json({ error: err.message, code: "UNSUPPORTED_GOAL" }, 422);
+      if (err instanceof ZodError)
+        return json({ error: "Invalid request: " + err.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; "), issues: err.issues.map((i) => `${i.path.join(".")}: ${i.message}`) }, 400);
       console.error(err);
       return json({ error: (err as Error).message ?? "internal error" }, 500);
     }

@@ -160,10 +160,10 @@ export default function Dashboard() {
               {err && <ErrorNote>{err}</ErrorNote>}
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={busy || !budget || goal.trim().length < 10}>
-                  {busy ? <Spinner /> : <Brain className="size-4" />} {busy ? "Planning…" : "Generate plan"}
+                  {busy ? <Spinner /> : <Brain className="size-4" />} {busy ? `Planning${net?.llm.provider ? ` with ${net.llm.provider}` : ""}…` : "Generate plan"}
                 </Button>
                 <span className="text-xs text-dim">
-                  Planner: {net ? (net.llm.configured ? `LLM (${net.llm.model})` : "rule-based (no LLM key configured)") : "…"}
+                  Planner: {net ? (net.llm.configured ? `${net.llm.provider} · ${net.llm.model} (validated by DAG checks; rule-based fallback on error)` : "rule-based (no LLM key configured)") : "…"}
                 </span>
               </div>
             </form>

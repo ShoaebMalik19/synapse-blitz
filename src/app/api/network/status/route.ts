@@ -3,7 +3,7 @@ import type { Hex } from "viem";
 import { balances, publicClient } from "@/server/chain";
 import { env, explorerAddress } from "@/server/env";
 import { handle, json } from "@/server/http";
-import { llmConfigured } from "@/server/planner";
+import { llmConfigured, llmProvider } from "@/server/planner";
 import { defaultBudget } from "@/server/budget-input";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,7 @@ export const GET = handle(async () => {
       facilitatorError: isErr(facilitator) ? facilitator.error : null,
       service: isErr(service) ? { online: false, url: e.X402_SERVICE_URL, error: service.error } : { online: true, url: e.X402_SERVICE_URL },
     },
-    llm: { configured: llmConfigured(), model: llmConfigured() ? e.LLM_MODEL : null },
+    llm: { configured: llmConfigured(), provider: llmConfigured() ? llmProvider().name : null, model: llmConfigured() ? e.LLM_MODEL : null },
     policyDefaults: defaultBudget(),
   });
 });
