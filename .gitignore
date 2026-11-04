@@ -1,0 +1,42 @@
+# deps
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# next
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+keystore/
+wallets/
+
+# data
+/data/
+*.db
+*.db-shm
+*.db-wal
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# misc
+.DS_Store
+npm-debug.log*
+.vercel
