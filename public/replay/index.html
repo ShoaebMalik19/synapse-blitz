@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Synapse · Recorded run · Monad Testnet</title>
+<meta name="description" content="Read-only replay of a recorded Synapse run on Monad Testnet: x402 payment, worker crash, checkpoint recovery, verified briefing, escrow payout." />
+<style>
+  :root { --bg:#07070b; --elev:#0c0c13; --surface:#11111a; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13); --fg:#ececf3; --muted:#a3a3b8; --dim:#70708a; --violet:#8b5cf6; --blue:#5b8cff; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color:#b4a1fb; text-underline-offset:3px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline:2px solid var(--violet); outline-offset:2px; border-radius:6px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .wrap { max-width:1180px; margin:0 auto; padding:20px 16px 64px; }
+  .banner { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid rgba(139,92,246,.35); background:rgba(139,92,246,.08); border-radius:12px; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:7px; border:1px solid var(--line2); font:600 11px/1.4 ui-monospace, monospace; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+  .p-violet { border-color:rgba(139,92,246,.4); background:rgba(139,92,246,.12); color:#c4b5fd; }
+  .p-ok { border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.1); color:var(--ok); }
+  .p-warn { border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.1); color:var(--warn); }
+  .p-bad { border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.1); color:var(--bad); }
+  .p-blue { border-color:rgba(91,140,255,.35); background:rgba(91,140,255,.1); color:#9bb8ff; }
+  h1 { font-size:clamp(22px,3.4vw,32px); line-height:1.15; letter-spacing:-.02em; margin:22px 0 6px; text-wrap:balance; }
+  h2 { font-size:15px; margin:0; display:flex; align-items:center; gap:8px; }
+  .sub { color:var(--muted); margin:0; }
+  .card { border:1px solid var(--line); background:rgba(17,17,26,.85); border-radius:14px; margin-top:16px; overflow:hidden; }
+  .card > header { padding:12px 16px; border-bottom:1px solid var(--line); }
+  .card > header p { margin:2px 0 0; color:var(--dim); font-size:12.5px; }
+  .body { padding:14px 16px; }
+  .steps { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); margin-top:18px; }
+  .step { border:1px solid var(--line); background:var(--elev); border-radius:12px; padding:12px; }
+  .step .n { font:11px ui-monospace, monospace; color:var(--dim); }
+  .step b { display:block; font-size:14px; margin-top:2px; }
+  .step .d { color:var(--muted); font-size:12.5px; margin-top:4px; overflow-wrap:anywhere; }
+  .step .s { margin-top:6px; font:600 10.5px ui-monospace, monospace; color:var(--ok); text-transform:uppercase; letter-spacing:.05em; }
+  .grid2 { display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width: 900px) { .grid2 { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); } }
+  .proofs { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+  .proof { border:1px solid rgba(52,211,153,.3); background:rgba(52,211,153,.05); border-radius:12px; padding:12px; }
+  .proof .l { color:var(--muted); font-size:12px; }
+  .proof .v { font-weight:600; margin-top:3px; }
+  .proof .h { font:12px ui-monospace, monospace; margin-top:4px; overflow-wrap:anywhere; }
+  .handoff { display:grid; gap:10px; grid-template-columns:1fr; align-items:stretch; }
+  @media (min-width: 900px) { .handoff { grid-template-columns: 1fr 28px 1fr 28px 1fr; } }
+  .arrow { display:grid; place-items:center; color:var(--dim); }
+  .box { border:1px solid var(--line); background:var(--elev); border-radius:12px; padding:12px; }
+  .box.cp { border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.05); }
+  .chip { display:inline-block; font:11px ui-monospace, monospace; border:1px solid var(--line); background:var(--bg); border-radius:6px; padding:2px 6px; margin:4px 4px 0 0; color:var(--muted); }
+  .row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; align-items:center; }
+  .meta { font:11.5px ui-monospace, monospace; color:var(--dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:4px 12px; overflow-wrap:anywhere; }
+  ul.ledger { list-style:none; margin:0; padding:0; }
+  ul.ledger li { padding:12px 16px; border-top:1px solid var(--line); }
+  ul.ledger li:first-child { border-top:0; }
+  .strike { text-decoration:line-through; color:var(--dim); }
+  ol.feed { list-style:none; margin:0; padding:6px 8px; max-height:520px; overflow:auto; }
+  ol.feed li { display:grid; grid-template-columns:76px 34px 1fr; gap:8px; padding:6px 8px; border-radius:8px; font-size:13px; }
+  ol.feed li .t { font:11.5px ui-monospace, monospace; color:var(--dim); }
+  ol.feed li .w { font:11.5px ui-monospace, monospace; color:var(--dim); }
+  ol.feed li.crash { background:rgba(248,113,113,.1); }
+  ol.feed li.load { background:rgba(52,211,153,.1); }
+  ol.feed li.paid { background:rgba(91,140,255,.1); }
+  .lv-warn { color:var(--warn); } .lv-error { color:var(--bad); } .lv-success { color:var(--ok); } .lv-info { color:var(--muted); }
+  @media (max-width: 520px) { ol.feed li { grid-template-columns: 1fr auto; } ol.feed li .m { grid-column: 1 / -1; } }
+  .md { white-space:pre-wrap; overflow-wrap:anywhere; font:12.5px/1.6 ui-monospace, monospace; color:#d4d4e0; background:var(--elev); border:1px solid var(--line); border-radius:10px; padding:14px; max-height:520px; overflow:auto; margin:0; }
+  .checks { margin:0; padding-left:0; list-style:none; font-size:13px; }
+  .checks li { color:var(--muted); }
+  .draft { border:1px dashed rgba(91,140,255,.45); }
+  .draft img { width:100%; height:auto; display:block; border-radius:10px; border:1px solid var(--line); }
+  footer { margin-top:28px; color:var(--dim); font-size:12.5px; }
+  .fade { animation:none; }
+  @media (prefers-reduced-motion: no-preference) { .fade { animation: fade .35s cubic-bezier(.22,1,.36,1) both; } @keyframes fade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none; } } }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="banner" role="note">
+    <span><span class="pill p-violet">Recorded run · Monad Testnet</span> &nbsp;<span class="sub" style="display:inline">Read-only replay of a real run. No login, no controls, no live backend — every transaction below is on Monad testnet.</span></span>
+    <a class="mono" href="https://github.com/ShoaebMalik19/synapse-blitz" style="font-size:13px">GitHub: ShoaebMalik19/synapse-blitz ↗</a>
+  </div>
+
+  <h1 id="goal">Loading recorded run…</h1>
+  <p class="sub mono" id="wfmeta" style="font-size:12.5px"></p>
+
+  <section aria-label="Run milestones"><ol class="steps" id="steps" style="list-style:none;padding:0;margin-top:18px"></ol></section>
+
+  <section class="card"><header><h2>Proof</h2><p>Each link opens the transaction on the Monad testnet explorer (it may show a brief browser check first).</p></header><div class="body proofs" id="proofs"></div></section>
+
+  <section class="card"><header><h2>Recovery handoff</h2><p>Worker A's process was terminated after a checkpoint; Worker B resumed from that checkpoint instead of starting over.</p></header><div class="body handoff" id="handoff"></div></section>
+
+  <div class="grid2">
+    <section class="card"><header><h2>Payment &amp; settlement ledger</h2><p>A purchase counts as paid only after its USDC Transfer log was verified on Monad.</p></header><ul class="ledger" id="ledger"></ul></section>
+    <section class="card"><header><h2>Activity</h2><p>Recorded event log (key events).</p></header><ol class="feed" id="feed"></ol></section>
+  </div>
+
+  <section class="card"><header><div class="row"><h2>Verified briefing</h2><a class="mono" href="/replay/briefing.md" download="synapse-briefing-wf_a4198e6b7d13412b.md" style="font-size:13px">Download Markdown ↓</a></div><p id="sha"></p></header>
+    <div class="body grid2">
+      <pre class="md" id="md" tabindex="0" aria-label="Briefing markdown"></pre>
+      <div><h2 style="margin-bottom:8px">Deterministic verification</h2><div id="checks"></div></div>
+    </div>
+  </section>
+
+  <section class="card draft"><header><div class="row"><h2>Separate: a saved Groq draft (not the run above)</h2><span class="pill p-blue">Groq · openai/gpt-oss-20b</span></div><p>Screenshot of draft <span class="mono">wf_07664bfb445539fd</span> generated through the dashboard by Groq and accepted by the DAG validator. It was never approved, so it has no payments or escrow. The recorded run above was planned before the Groq integration (rule-based planner).</p></header>
+    <div class="body"><img src="/replay/groq-draft.png" alt="Synapse draft review screen: planner Groq openai/gpt-oss-20b, a 4-task DAG for assessing Monad developer tooling gaps, awaiting approval, no payments or escrow" loading="lazy" /></div>
+  </section>
+
+  <footer>Synapse · decentralized agent workflow execution · hackathon prototype on Monad testnet. Snapshot exported from the local run database; no keys or credentials are included. Source: <a href="https://github.com/ShoaebMalik19/synapse-blitz">github.com/ShoaebMalik19/synapse-blitz</a> · Evidence: <a href="https://github.com/ShoaebMalik19/synapse-blitz/blob/main/PAYMENT_VERIFICATION.md">PAYMENT_VERIFICATION.md</a></footer>
+</main>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const short = (h, n = 6) => (h ? h.slice(0, n + 2) + "…" + h.slice(-n) : "—");
+  const usdc = (b) => String(Number(b) / 1e6);
+  const mon = (w) => (Number(w) / 1e18).toFixed(2);
+  const clock = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const link = (href, text) => (href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)} ↗</a>` : esc(text));
+  let r;
+  try { r = await (await fetch("/replay/run.json", { cache: "no-store" })).json(); } catch (e) { $("goal").textContent = "Could not load the recorded run."; return; }
+  const w = r.workflow;
+  const paid = r.payments.filter((p) => p.status === "CONFIRMED");
+  const rejected = r.payments.find((p) => p.status === "REJECTED");
+  const accept = r.escrow.find((e) => e.action === "ACCEPT");
+  const fund = r.escrow.find((e) => e.action === "FUND");
+  const rec = r.attempts.find((a) => a.kind === "RECOVERY");
+  const failed = r.attempts.find((a) => a.task_id === rec?.task_id && a.status === "FAILED");
+  const cp = r.checkpoints.find((c) => c.id === rec?.resumed_from_checkpoint);
+  const doneTasks = r.tasks.filter((t) => t.status === "COMPLETED").length;
+  const synth = r.tasks.find((t) => t.capability === "synthesis");
+  const allPassed = r.verifications.every((v) => v.passed);
+  const hashMatch = accept?.verification?.resultHashMatches === true;
+
+  document.title = "Synapse · Recorded run · Monad Testnet";
+  $("goal").textContent = w.goal;
+  $("wfmeta").textContent = `${w.id} · ${w.status} · planner: ${w.planner} · ${r.network} · recorded ${new Date(w.created_at).toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+  const steps = [
+    ["Plan created", `${r.tasks.length}-task DAG validated (${w.planner})`, w.status !== "APPROVAL_REQUIRED", null],
+    [paid.length === 1 ? "x402 paid once" : `x402 paid ×${paid.length}`, paid.length ? `${usdc(paid.reduce((s, p) => s + Number(p.amount_base), 0))} USDC · Transfer log verified` : "no paid purchase", paid.length === 1, paid[0]?.explorer],
+    ["Worker A crashed", failed?.failure_reason || "process terminated", Boolean(failed), null],
+    ["Worker B resumed", cp ? `from checkpoint seq ${cp.seq} · purchase not repeated` : "—", rec?.status === "SUCCEEDED", null],
+    ["Briefing verified", `${doneTasks}/${r.tasks.length} tasks passed deterministic checks`, synth?.status === "COMPLETED" && allPassed, null],
+    ["Escrow settled", `${fund ? mon(fund.amount_wei) : "?"} MON paid to Worker B on accepted hash`, w.settlement_status === "SETTLED", accept?.explorer],
+  ];
+  $("steps").innerHTML = steps.map(([t, d, ok, href], i) => `<li class="step fade" style="animation-delay:${i * 50}ms"><span class="n">${String(i + 1).padStart(2, "0")}</span><b>${esc(t)}</b><div class="d">${esc(d)}</div><div class="s" style="color:${ok ? "var(--ok)" : "var(--warn)"}">${ok ? "done" : "not verified"}${href ? ` · ${link(href, "tx")}` : ""}</div></li>`).join("");
+
+  $("proofs").innerHTML = [
+    paid[0] && `<div class="proof"><div class="l">x402 data purchase</div><div class="v">${usdc(paid[0].amount_base)} USDC → provider · block ${esc(paid[0].onchain?.blockNumber)}</div><div class="h">${link(paid[0].explorer, short(paid[0].tx_hash, 8))}</div></div>`,
+    accept && `<div class="proof"><div class="l">Escrow payout (acceptResult)</div><div class="v">${fund ? mon(fund.amount_wei) : "?"} MON → Worker B · state ${esc(accept.verification?.onchainState)}</div><div class="h">${link(accept.explorer, short(accept.tx_hash, 8))}</div></div>`,
+    `<div class="proof"><div class="l">Report integrity</div><div class="v">${hashMatch ? "On-chain result hash = this briefing" : "hash not matched"}</div><div class="h">${esc(short(r.report.sha256, 10))}</div></div>`,
+    `<div class="proof"><div class="l">TaskEscrow contract</div><div class="v">Monad testnet</div><div class="h"><a href="https://testnet.monadvision.com/address/${esc(r.escrowContract)}" target="_blank" rel="noopener noreferrer">${esc(short(r.escrowContract, 6))} ↗</a></div></div>`,
+  ].filter(Boolean).join("");
+
+  if (rec) {
+    const later = r.checkpoints.filter((c) => c.task_id === rec.task_id && c.worker_id === rec.worker_id && c.created_at >= rec.started_at).length;
+    $("handoff").innerHTML = `
+      <div class="box"><div class="row"><b>${esc(failed?.worker_id || "worker-a")}</b><span class="pill p-bad">failed</span></div><div class="meta">Attempt #${esc(failed?.attempt_no)} · ${esc(failed?.kind)}</div><div class="d" style="color:var(--muted);font-size:13px;margin-top:4px">${esc(failed?.failure_reason)}</div><div class="meta">${failed ? clock(failed.started_at) + " → " + (failed.ended_at ? clock(failed.ended_at) : "—") : ""}</div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="box cp"><b>Checkpoint seq ${esc(cp?.seq)}</b><div>${(cp?.completed_steps || []).map((s) => `<span class="chip">✓ ${esc(s)}</span>`).join("")}</div><div class="meta">${cp?.payment_ops ? `${cp.payment_ops} pay op recorded · ` : ""}state hash ${esc(short(cp?.state_hash, 8))} verified on load</div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="box"><div class="row"><b>${esc(rec.worker_id)}</b><span class="pill p-ok">${esc(rec.status.toLowerCase())}</span></div><div class="meta">Attempt #${esc(rec.attempt_no)} · RECOVERY</div><div class="d" style="color:var(--muted);font-size:13px;margin-top:4px">Skipped ${cp?.completed_steps.length ?? 0} completed step(s); +${later} new checkpoints. ${paid.length === 1 ? "x402 purchase reused — no second charge." : ""}</div></div>`;
+  }
+
+  $("ledger").innerHTML = [
+    ...r.payments.map((p) => {
+      const ok = p.status === "CONFIRMED";
+      const label = ok ? `<span class="pill p-ok">paid · verified on-chain</span>` : p.status === "REJECTED" ? `<span class="pill p-bad">rejected · not signed</span>` : `<span class="pill p-warn">${esc(p.status)} · not charged</span>`;
+      return `<li><div class="row"><span><span class="pill p-blue">x402</span> <span class="mono" style="font-size:13px">${esc(p.resource)}</span></span><span><span class="mono ${ok ? "" : "strike"}">${usdc(p.amount_base)} USDC</span> ${label}</span></div>
+        <div class="meta"><span>${esc(p.network)}</span><span>payTo ${esc(short(p.pay_to, 4))}</span>${p.tx_hash ? `<span>${link(p.explorer, "tx " + short(p.tx_hash))}</span>` : ""}${p.onchain?.verified ? `<span style="color:var(--ok)">✓ Transfer ${usdc(p.onchain.transfer?.value)} USDC @ block ${esc(p.onchain.blockNumber)}</span>` : ""}</div>
+        ${p.status_reason ? `<div class="meta" style="color:var(--warn)">${esc(p.status_reason)}</div>` : ""}</li>`;
+    }),
+    ...r.escrow.map((e) => `<li><div class="row"><span><span class="pill p-violet">escrow</span> <span class="mono" style="font-size:13px">${esc(e.action)}</span></span><span>${e.amount_wei ? `<span class="mono">${mon(e.amount_wei)} MON</span> ` : ""}<span class="pill ${e.status === "CONFIRMED" ? "p-ok" : "p-warn"}">${esc(e.status)}</span></span></div><div class="meta">${e.tx_hash ? `<span>${link(e.explorer, "tx " + short(e.tx_hash))}</span>` : ""}${e.block_number ? `<span>block ${esc(e.block_number)}</span>` : ""}</div></li>`),
+  ].join("");
+
+  const KEY = /^(planner\.generated|workflow\.(approved|completed)|escrow\.(confirmed|settled)|payment\.(confirmed|rejected|reserved)|worker\.(crash|resume)|lease\.expired|task\.(recovery_claimed|completed|attempt_failed)|checkpoint\.(loaded|saved)|fault\.armed)$/;
+  $("feed").innerHTML = r.events.filter((e) => KEY.test(e.type)).map((e) => {
+    const cls = e.type === "worker.crash" ? "crash" : e.type === "checkpoint.loaded" ? "load" : e.type === "payment.confirmed" ? "paid" : "";
+    return `<li class="${cls}"><span class="t">${clock(e.created_at)}</span><span class="w">${esc(e.worker_id ? e.worker_id.replace("worker-", "W·") : "orch")}</span><span class="m lv-${esc(e.level)}">${esc(e.message)}${e.explorer ? " " + link(e.explorer, "tx") : ""}</span></li>`;
+  }).join("");
+
+  $("md").textContent = r.report.markdown;
+  $("sha").innerHTML = `Artifact sha256 <span class="mono" style="overflow-wrap:anywhere">${esc(r.report.sha256)}</span>${hashMatch ? " — equals the result hash accepted on-chain" : ""}`;
+  $("checks").innerHTML = r.verifications.map((v) => `<div style="margin-bottom:10px"><b class="mono" style="font-size:13px">${esc(v.taskId)}</b> <span class="pill ${v.passed ? "p-ok" : "p-bad"}">${v.passed ? "passed" : "failed"}</span><ul class="checks">${v.checks.map((c) => `<li>${c.passed ? "✓" : "✗"} ${esc(c.label)}${c.detail ? ` <span style="color:var(--dim)">(${esc(c.detail)})</span>` : ""}</li>`).join("")}</ul></div>`).join("");
+})();
+</script>
+</body>
+</html>

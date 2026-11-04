@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   partialPrefetching: false,
   serverExternalPackages: ["better-sqlite3"],
+  // Public, static, read-only replay of the recorded run (no API/DB dependency).
+  async rewrites() {
+    return [{ source: "/replay", destination: "/replay/index.html" }];
+  },
   turbopack: {
     rules: {
       "*.css": {
