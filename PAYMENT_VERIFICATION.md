@@ -3,7 +3,15 @@
 This file records **only** evidence that exists on-chain. Nothing here is simulated. Status values:
 `CONFIRMED` (receipt + logs verified), `PENDING`, `BLOCKED` (could not be attempted, reason given), `REJECTED` (refused by policy before signing).
 
-_Last updated: 2026-11-04 (after funded escrow runs)._
+_Last updated: 2026-11-04 (final, after funded x402 run)._
+
+## Final status
+
+| Flow | Status | Proof (best run `wf_a4198e6b7d13412b`) |
+|---|---|---|
+| **x402** (USDC, `exact`, eip155:10143) | ✅ **CONFIRMED** — 1 payment of 0.01 USDC, verified against receipt + `Transfer` log + EIP-3009 nonce | [`0x47bd1a4f…8685a7`](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7) |
+| **TaskEscrow** (native MON) | ✅ **CONFIRMED** — funded 0.01 MON, settled to Worker B, `TaskSettled` hash = verified briefing | [`0xaff7bd15…8971b2`](https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2) |
+| Over-cap x402 request (0.25 USDC) | ✅ **REJECTED** by policy before signing (in every run) | — |
 
 ## Networks and assets
 
@@ -35,7 +43,32 @@ _Last updated: 2026-11-04 (after funded escrow runs)._
 
 Operator funding: 0.5 MON received (MetaMask transfer from `0x65036…e53b3`), verified on-chain via `eth_getBalance` before deployment.
 
-### Workflow `wf_01246f8c91c04819` — clean automated settlement ✅ (reference run)
+### Workflow `wf_a4198e6b7d13412b` — best run: x402 + failover + escrow settlement ✅
+
+Funding before the run: operator held 20 testnet USDC (`balanceOf` on `0x534b…43A3`, chain 10143) and ~0.29 MON. Failure drill on; limits unchanged (x402 cap 0.05 USDC, per-call 0.02, approval threshold 0.015, escrow 0.01 MON, gas ≤ 0.05 MON).
+
+| Action | Status | Block | Tx |
+|---|---|---|---|
+| `createTask` | CONFIRMED | 76881320 | [`0xd30522e9…26f348`](https://testnet.monadvision.com/tx/0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348) |
+| `fundTask` (0.01 MON) | CONFIRMED | 76881328 | [`0xd4e513b5…7d6d72`](https://testnet.monadvision.com/tx/0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72) |
+| **x402** `GET /v1/monad/ecosystem` — 0.01 USDC | CONFIRMED | 76881361 | [`0x47bd1a4f…8685a7`](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7) |
+| x402 `GET /v1/monad/deep-dive` — 0.25 USDC | REJECTED before signing (exceeds 0.02 per-call cap) | — | — |
+| `submitResult` (Worker B) | CONFIRMED | 76881475 | [`0x1f32f2c1…90f7a3`](https://testnet.monadvision.com/tx/0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3) |
+| `acceptResult` → **escrow payout** | CONFIRMED | 76881480 | [`0xaff7bd15…8971b2`](https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2) |
+
+x402 verification (read independently from Monad RPC, not from the provider):
+* Receipt `status 0x1`, submitted by the facilitator signer `0x95d181c4…4304c`.
+* Exactly one `Transfer` log from the USDC contract `0x534b2f3A…43A3`: from operator `0x33D3…faCf2` to payTo `0x6cCC…8787`, value **10000** (0.01 USDC).
+* `authorizationState(operator, nonce) == true` (EIP-3009 authorization consumed).
+* Balances after the run: operator 20 → **19.99** USDC, payTo **0.01** USDC total — exactly one purchase has ever settled.
+
+Recovery: Worker A purchased the dataset, saved checkpoint seq 1 (`purchase_dataset`, payment op id recorded), then the injected fault terminated its process. The lease expired; Worker B claimed recovery attempt #2, loaded checkpoint seq 1 (state hash verified), **skipped `purchase_dataset`**, and completed the remaining steps. No second x402 authorization was signed.
+
+Escrow verification: receipt `success`; `TaskSettled` found, 10000000000000000 wei; event result hash `0x9a431f2c75d43bdf30755f29edc27b89f53576b9c5326ebd11a75251b70c86ed` = the verified briefing artifact hash; `getTask().state == Settled`; Worker B 0.045647648 → 0.055647648 MON at the settlement block (+0.01 MON). Briefing verification: research 8/8, analysis 7/7, synthesis 9/9 checks.
+
+### Workflow `wf_01246f8c91c04819` — escrow settled; x402 not attempted ✅/⚠️
+
+The paid data service returned HTTP 500 on the first request (its startup call to the facilitator timed out), so no x402 authorization was created; the run continued with public sources. Fixed afterwards (facilitator warm-up + one probe retry). Escrow settled cleanly:
 
 Rule-based planner · failure drill: Worker A crashed after checkpoint 1 · Worker B resumed from the checkpoint and completed all tasks. No manual steps.
 On-chain spec hash `0xfc738752…b7700797` = SHA-256 of the validated plan.
@@ -68,16 +101,18 @@ Notes (what went wrong and what changed):
 2. The settlement retry sent top-up 3 although the submit was already broadcast. All top-ups stayed within the workflow's 0.05 MON gas allowance and went to Synapse's own Worker B wallet, but the top-up was unnecessary. **Fix:** top-ups happen only when a new submit will actually be signed, sized from the live gas estimate × maxFee.
 3. A settlement interrupted by a process restart could stay stuck in `SETTLING`. **Fix:** the orchestrator marks such workflows `FAILED` (retryable) on startup; retries reconcile broadcast txs by receipt.
 
-## x402 payments
+## x402 payments (all runs)
 
-| Resource | Amount | Status | Tx | Notes |
+| Run | Resource | Amount | Final status | Tx |
 |---|---|---|---|---|
-| `GET /v1/monad/ecosystem` | 0.01 USDC (10000 base units) | **BLOCKED** | — | HTTP 402 received and policy approved. Signing refused by the balance preflight: the operator holds **0 testnet USDC** (`balanceOf`, checked on-chain). Reservation released. No x402 settlement has occurred yet. |
-| `GET /v1/monad/deep-dive` | 0.25 USDC (250000 base units) | **REJECTED** (by design) | — | Policy guard: exceeds per-call cap 0.02 USDC. Never signed. |
+| `wf_a4198e6b7d13412b` | `GET /v1/monad/ecosystem` | 0.01 USDC | ✅ **CONFIRMED** (on-chain verified) | [`0x47bd1a4f…8685a7`](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7) |
+| `wf_a4198e6b7d13412b` | `GET /v1/monad/deep-dive` | 0.25 USDC | **REJECTED** — per-call cap, never signed | — |
+| `wf_01246f8c91c04819` | `GET /v1/monad/ecosystem` | — | **NOT ATTEMPTED** — provider HTTP 500 (facilitator unreachable at service start) | — |
+| `wf_01246f8c91c04819` | `GET /v1/monad/deep-dive` | 0.25 USDC | **REJECTED** — never signed | — |
+| `wf_2ac61fd5c046ed65` | `GET /v1/monad/ecosystem` | 0.01 USDC | **BLOCKED · NOT CHARGED** — operator held 0 USDC at the time; no authorization signed; reservation released | — |
+| `wf_2ac61fd5c046ed65` | `GET /v1/monad/deep-dive` | 0.25 USDC | **REJECTED** — never signed | — |
 
-To complete: fund `0x33D32B469efDcC765f1CfE84737A337e814faCf2` with ≥0.1 testnet USDC (https://faucet.circle.com → Monad Testnet) and run one workflow. The ledger will show the settlement tx once its `Transfer` log is verified.
-
-In the reference run, the paid service's first request returned HTTP 500 because its startup call to the facilitator timed out. **Fix:** the service now warms up facilitator initialization with retries before listening, and the client retries the unpaid probe once on a 5xx.
+No payment outcome was ever UNKNOWN, so no reconciliation was needed; the reconciliation path (EIP-3009 `authorizationState` + `AuthorizationUsed` logs) is covered by unit tests.
 
 ## Verification method
 

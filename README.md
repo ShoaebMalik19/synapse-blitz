@@ -2,6 +2,25 @@
 
 > Monad Blitz (Devcon Mumbai) submission · hackathon prototype · **testnet only**
 
+## ▶ Best demo run — `wf_a4198e6b7d13412b` (all live on Monad testnet)
+
+**Open locally:** http://localhost:3000/workflows/wf_a4198e6b7d13412b · briefing: http://localhost:3000/workflows/wf_a4198e6b7d13412b/result
+(start with `npm run start:all`, sign in with `OPERATOR_ACCESS_TOKEN` from `.env`)
+
+One run, end to end: plan → escrow funded → **x402 data purchase settled** → Worker A **crashed** → Worker B **resumed from checkpoint** (purchase not repeated) → over-cap purchase **rejected before signing** → 3/3 tasks verified → **escrow settled**.
+
+| Proof | Status | Explorer |
+|---|---|---|
+| x402 payment, 0.01 USDC → provider (Transfer log + EIP-3009 nonce verified) | ✅ CONFIRMED, block 76881361 | [`0x47bd1a4f…8685a7`](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7) |
+| Over-cap x402 request (0.25 USDC > 0.02 cap) | ✅ REJECTED before signing | — |
+| `TaskEscrow.createTask` | ✅ CONFIRMED | [`0xd30522e9…26f348`](https://testnet.monadvision.com/tx/0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348) |
+| `TaskEscrow.fundTask` (0.01 MON) | ✅ CONFIRMED | [`0xd4e513b5…7d6d72`](https://testnet.monadvision.com/tx/0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72) |
+| `submitResult` (Worker B, briefing hash) | ✅ CONFIRMED | [`0x1f32f2c1…90f7a3`](https://testnet.monadvision.com/tx/0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3) |
+| `acceptResult` → **escrow payout** to Worker B | ✅ CONFIRMED, `Settled`, +0.01 MON | [`0xaff7bd15…8971b2`](https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2) |
+| TaskEscrow contract | deployed block 76873840 | [`0x097dc98f…9f10`](https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10) |
+
+Full evidence and verification method: [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) · 60-second walkthrough: [DEMO.md](DEMO.md).
+
 Synapse turns a **goal + budget** into a verified multi-agent workflow. An AI planner proposes a task DAG, deterministic code validates it, **independent worker processes** execute the tasks, an agent **buys data over x402**, a **Monad `TaskEscrow` contract** commits and settles the deliverable, and when a worker dies mid-task another worker **resumes from a hashed checkpoint without paying twice**.
 
 ```
@@ -40,10 +59,10 @@ Large outputs never go on-chain; only 32-byte commitments do. On-chain receipts 
 | **Real crash failover**: Worker A process exits (code 137) after a checkpoint; Worker B resumes from it | ✅ | E2E + unit test asserts no side effect repeated |
 | Deterministic policy guard (payee/asset/network/scheme allowlist, per-call cap, approval threshold, total cap, idempotency) | ✅ | `tests/unit/policy.test.ts`; live run rejects the 0.25 USDC deep-dive **before signing** |
 | x402 v2 resource server (`@x402/express`) on `eip155:10143` returning real HTTP 402 | ✅ | live `PAYMENT-REQUIRED` header from the service |
-| x402 client: policy → EIP-3009 signature → facilitator settle → **Transfer log verified on-chain** | ⚠️ implemented; live settlement **pending wallet USDC** | see [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
+| x402 client: policy → EIP-3009 signature → facilitator settle → **Transfer log verified on-chain** | ✅ **live on Monad testnet** — [`0x47bd1a4f…8685a7`](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7) | [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
 | EIP-3009 nonce reconciliation for unknown outcomes (never blind re-pay) | ✅ | `tests/unit/payments.test.ts` |
 | `TaskEscrow` contract | ✅ 21 Foundry tests | `contracts/test/TaskEscrow.t.sol` |
-| TaskEscrow deploy + create/fund/submit/accept with receipt + event + state verification | ✅ **live on Monad testnet** — [`0x097dc98f…9f10`](https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10), settlement [`0x5f631295…a9c`](https://testnet.monadvision.com/tx/0x5f631295b1deed583ad6c9478e2024a32bd18b2bdc6d1142f91e0293feaaba9c) | [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
+| TaskEscrow deploy + create/fund/submit/accept with receipt + event + state verification | ✅ **live on Monad testnet** — [`0x097dc98f…9f10`](https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10), settlement [`0xaff7bd15…8971b2`](https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2) | [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
 | Deterministic output verification (schema, citations, sections, links, hash, no unresolved payments) | ✅ | `tests/unit/security.test.ts` |
 | Live DAG, event timeline, recovery timeline, payment ledger, result page, Markdown download | ✅ | Playwright E2E (real Chrome, production build) |
 
@@ -105,7 +124,7 @@ See **[DEMO.md](DEMO.md)** (3-minute script). Architecture details: **[ARCHITECT
 
 ## Known limitations
 
-* **x402 live settlement is pending testnet USDC** in the operator wallet (escrow settlement is live and verified) — see PAYMENT_VERIFICATION.md.
+* The x402 data service runs locally (`localhost:4021`); the facilitator and settlement are real Monad testnet infrastructure.
 * Single-operator auth model; prototype worker registry is a static allowlist (not a permissionless marketplace).
 * Workers share one SQLite database on one machine (separate processes, not separate hosts). Production would use Postgres + network workers.
 * Escrow covers the final deliverable (payee = Worker B); per-task escrow for every node is future work.

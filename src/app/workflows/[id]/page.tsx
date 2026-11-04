@@ -22,7 +22,7 @@ import {
 import { Dag } from "@/components/dag";
 import { Nav } from "@/components/nav";
 import { Badge, Button, ButtonLink, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge, cx } from "@/components/ui";
-import { api, ApiError, clock, fmtMon, fmtUsdc, shortHash, type EventRow, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
+import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, shortHash, type EventRow, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
 
 const levelColor = { info: "text-muted", warn: "text-warn", error: "text-bad", success: "text-ok" } as const;
 
@@ -260,7 +260,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
                             .map((c) => (
                               <span key={c.id} title={`state hash ${c.state_hash}`} className="rounded border border-line bg-elev px-1.5 py-0.5 font-mono text-[10px] text-dim">
                                 cp{c.seq}: {JSON.parse(c.completed_steps_json).at(-1)}
-                                {JSON.parse(c.payment_op_ids_json).length ? " · 💳" : ""}
+                                {(() => { const n = JSON.parse(c.payment_op_ids_json).length; return n ? ` · ${n} pay op${n > 1 ? "s" : ""} recorded` : ""; })()}
                               </span>
                             ))}
                         </div>
@@ -285,8 +285,8 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
                     <span className="font-mono text-xs">{new URL(p.resource_url).pathname}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Mono>{fmtUsdc(p.amount_base)} USDC</Mono>
-                    <StatusBadge s={p.status} />
+                    <Mono className={paymentLabel(p).charged ? "" : "text-dim line-through"}>{fmtUsdc(p.amount_base)} USDC</Mono>
+                    <Badge t={paymentLabel(p).tone}>{paymentLabel(p).label}</Badge>
                   </div>
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-3 font-mono text-[10.5px] text-dim">

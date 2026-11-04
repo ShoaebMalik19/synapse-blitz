@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import { ArrowLeft, BadgeCheck, CircleDollarSign, Download, Landmark, Library, ShieldCheck, Users } from "lucide-react";
 import { Nav } from "@/components/nav";
 import { Badge, Card, CardHeader, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge } from "@/components/ui";
-import { api, ApiError, clock, fmtMon, fmtUsdc, shortHash, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
+import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, shortHash, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
 
 type ResultResponse = WorkflowDetail &
   PaymentsResponse & {
@@ -133,9 +133,9 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                   <li key={p.id} className="flex items-center justify-between gap-2 text-xs">
                     <span className="truncate font-mono">{new URL(p.resource_url).pathname}</span>
                     <span className="flex shrink-0 items-center gap-2">
-                      <Mono>{fmtUsdc(p.amount_base)}</Mono>
+                      <Mono className={paymentLabel(p).charged ? "" : "text-dim line-through"}>{fmtUsdc(p.amount_base)}</Mono>
                       {p.tx_hash && <Ext href={p.explorer_url}>tx</Ext>}
-                      <StatusBadge s={p.status} />
+                      <Badge t={paymentLabel(p).tone}>{paymentLabel(p).label}</Badge>
                     </span>
                   </li>
                 ))}

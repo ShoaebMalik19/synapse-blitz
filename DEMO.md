@@ -1,53 +1,44 @@
-# Synapse — 3-minute demo
+# Synapse — Demo
 
-## Before you present (5 min)
+Best run: **`wf_a4198e6b7d13412b`** — x402 payment settled, Worker A crashed, Worker B resumed from checkpoint, escrow paid out. Everything below is already on Monad testnet; the demo replays it, no live spending required.
+
+## Setup (once)
 
 ```bash
-npm run status            # chain 10143, operator MON + USDC > 0, facilitator exact@eip155:10143 SUPPORTED
-npm run deploy:escrow     # once; writes MONAD_ESCROW_ADDRESS
-npm run build && npm run start:all
+npm run start:all     # web :3000 + x402 data service :4021 + orchestrator + Worker A + Worker B
 ```
 
-Open http://localhost:3000/dashboard and sign in with `OPERATOR_ACCESS_TOKEN`. Check that the **Network & wallet** card is all green and that both workers show **ONLINE**. Keep a terminal with `npm run start:all` logs visible next to the browser so the audience can see Worker A's process exit.
+Have the `OPERATOR_ACCESS_TOKEN` from `.env` ready. Optionally keep the terminal visible to show both worker processes.
 
-## Script
+## Click-by-click walkthrough
 
-**0:00 — The problem (20 s)**
-"Agents can plan and call tools, but when work crosses operators there's no enforceable budget, no portable checkpoint, and no outcome-based payment. Synapse adds all three — using x402 for metered purchases and Monad for settlement."
+1. **Login** — open http://localhost:3000/dashboard → you are redirected to `/login` → paste the operator token → **Sign in**.
+2. **Dashboard** — point at *Network & wallet* (chain `10143 = expected`, TaskEscrow deployed, facilitator `exact @ eip155:10143`) and *Worker registry* (Worker A and Worker B **ONLINE**, separate processes).
+3. **Workflow history** — under *Recent workflows*, click **wf_a4198e6b7d13412b** (direct: http://localhost:3000/workflows/wf_a4198e6b7d13412b).
+4. **Stat cards** — `x402 confirmed 0.01 USDC`, `Escrow 0.0100 MON · SETTLED`, `Recoveries 1`.
+5. **Live event timeline** (right) — scroll to show, in order: `HTTP 402` → `Policy approved and reserved 0.01 USDC` → `x402 payment settled on Monad testnet and verified (USDC Transfer log matched)` → red **`Injected failure: Worker A … terminating`** → `lease expired`.
+6. **Recovery timeline** (bottom left) — attempt **#1 worker-a FAILED** (lease expired, checkpoint `cp1: purchase_dataset`), attempt **#2 RECOVERY worker-b SUCCEEDED**, *resumed from cp_… (seq 1)*, then cp2–cp6. The purchase step was not repeated.
+7. **Payment & settlement ledger** (bottom right) —
+   * `/v1/monad/ecosystem 0.01 USDC` **PAID · VERIFIED ON-CHAIN**, `✓ Transfer log verified @ block 76881361` → click the **tx** link.
+   * `/v1/monad/deep-dive 0.25 USDC` (struck through) **REJECTED · NOT SIGNED** — over the 0.02 per-call cap.
+   * Escrow `CREATE`, `FUND 0.0100 MON`, `SUBMIT`, `ACCEPT` — all **CONFIRMED** with tx links.
+8. **Briefing** — click **View briefing** (top right): cited Markdown report; sidebar shows *all verification checks passed*, on-chain state **Settled**, *result hash on-chain = report artifact*, cost breakdown, worker history with the RECOVERY attempt.
+9. **Download Markdown** — the file includes the x402 settlement tx under *Data Provenance*.
+10. **Explorer proof** — click the `ACCEPT` tx (settlement) and the x402 tx in the ledger. Explorer links (the explorer may show a short browser check first):
+    * x402 payment: https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7
+    * escrow payout: https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2
 
-**0:20 — Goal + budget (25 s)** · Dashboard
-* Objective: *Research the Monad ecosystem and generate an actionable technical briefing.*
-* Point at the two budget panels: "USDC for x402 data, MON for escrow and gas — separate, never converted. The server caps every field; I can only lower them."
-* Click **Generate plan**.
+## 60-second presenter script
 
-**0:45 — Validated DAG (20 s)** · Workflow page
-* "The planner proposed research → analysis → briefing. Zod and graph checks rejected anything cyclic, unknown or over budget. Workers are assigned by code, not the LLM."
-* Leave **Failure drill** checked → **Approve & start**.
+* **0–10 s** — "Synapse lets agents plan, pay, recover and get paid — with on-chain proof. One goal, one budget: USDC for data, MON for escrow, kept separate."
+* **10–20 s** — *(workflow page)* "The plan was validated deterministically, then a TaskEscrow commitment was created and funded on Monad."
+* **20–30 s** — *(timeline + ledger)* "Worker A hit a paid API, got HTTP 402, our policy guard approved one cent, and the payment settled — we verified the USDC Transfer log on-chain. It also tried a 25-cent purchase; the guard rejected it before signing."
+* **30–42 s** — *(recovery timeline)* "Then we killed Worker A mid-task. Its lease expired, Worker B loaded the saved checkpoint and continued — without buying the data again. One purchase, ever."
+* **42–52 s** — *(briefing page)* "Every task passed deterministic checks. Worker B committed the briefing hash on-chain and the requester accepted that exact hash — escrow paid out. The on-chain hash matches this report."
+* **52–60 s** — *(explorer)* "Here are both transactions on Monad testnet. Plan, pay, fail, recover, verify, settle."
 
-**1:05 — On-chain commitment (15 s)**
-* Ledger shows `escrow CREATE` and `FUND` with explorer links: "the deliverable's spec hash and 0.01 MON are now locked on Monad."
+## Running a fresh workflow (optional, spends testnet funds)
 
-**1:20 — x402 purchase + policy (25 s)**
-* Timeline: `HTTP 402 from Synapse Monad Data Service` → `Policy approved and reserved 0.01 USDC` → `settled on Monad testnet and verified (USDC Transfer log matched)`. Open the tx link.
-* Next line: `Policy rejected x402 purchase: amount 250000 exceeds per-call cap` — "the agent asked for a $0.25 deep-dive; the guard refused before any signature."
+Dashboard → **Generate plan** → keep **Failure drill** checked → **Approve & start**. Takes ~70 s. Spends ≤0.01 USDC (x402) and 0.01 MON escrow + gas from the operator wallet.
 
-**1:45 — Crash and recovery (35 s)**
-* Timeline turns red: `Injected failure: Worker A … terminating` (terminal shows `exited code=137`).
-* `lease expired` → `Worker B claimed recovery attempt #2 from checkpoint seq N` → `Loaded checkpoint` → `skipping completed steps: purchase_dataset, …`.
-* Recovery timeline card: attempt #1 FAILED (worker-a), #2 RECOVERY SUCCEEDED (worker-b). Ledger still shows **one** x402 payment.
-
-**2:20 — Verification + settlement (25 s)**
-* `Verification passed: 9/9 checks` → `TaskEscrow.submitResult (Worker B)` → `TaskEscrow.acceptResult (settlement) confirmed` → `Escrow settled on Monad and verified (event + state)`.
-* Click **View briefing**.
-
-**2:45 — Result (15 s)**
-* Cited briefing, verification checklist, worker history with the RECOVERY attempt, cost breakdown in USDC and MON, on-chain state `Settled` with "result hash on-chain = report artifact". **Download Markdown**.
-* Close: "Plan, pay, fail, recover, verify, settle — with every claim backed by a transaction hash."
-
-## If something external is down
-
-The UI never fakes success. If the wallet is unfunded or the facilitator is unavailable, the exact operation is shown as **BLOCKED** with its reason, and the rest of the workflow (planning, failover, verification, report) still runs. Say so explicitly and show the policy rejection + failover, which are fully local.
-
-## Manual failure injection (alternative to the drill)
-
-Approve without the drill, then press **Inject Worker Failure** while the research node is running. It arms a real crash that fires right after Worker A's next durable checkpoint.
+If something external is down, the UI never fakes success: the affected operation is shown as **BLOCKED · NOT CHARGED** with the exact reason, and failover, verification and the report still work. Earlier runs `wf_01246f8c91c04819` (escrow settled; x402 not attempted — provider returned HTTP 500 at startup) and `wf_2ac61fd5c046ed65` (escrow settled, x402 blocked — no USDC then) remain in history as examples.
