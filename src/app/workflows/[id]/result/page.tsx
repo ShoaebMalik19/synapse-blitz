@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowLeft, BadgeCheck, CircleDollarSign, Download, Landmark, Library, ShieldCheck, Users } from "lucide-react";
 import { Nav } from "@/components/nav";
+import { deriveStory, StoryStepper } from "@/components/story";
 import { Badge, Card, CardHeader, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge } from "@/components/ui";
 import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, shortHash, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
 
@@ -46,6 +47,8 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const synth = r.tasks.find((t) => t.capability === "synthesis");
   const accept = r.escrow.find((e) => e.action === "ACCEPT");
   const allPassed = r.verifications.length > 0 && r.verifications.every((v) => v.passed);
+  const paid = r.payments.find((p) => p.status === "CONFIRMED");
+  const story = deriveStory(r, r.payments, r.escrow);
   const hashMatch = r.onchainEscrowTask && synth?.resultHash ? r.onchainEscrowTask.resultHash.toLowerCase() === synth.resultHash.toLowerCase() : null;
 
   return (
@@ -69,14 +72,41 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+      <section aria-label="Run milestones">
+        <StoryStepper steps={story} compact />
+      </section>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        <Proof
+          ok={Boolean(paid?.verification?.onchain?.verified)}
+          label="x402 data purchase"
+          value={paid ? `${fmtUsdc(paid.amount_base)} USDC · Transfer log verified` : "no paid purchase in this run"}
+          href={paid?.explorer_url}
+          hash={paid?.tx_hash}
+        />
+        <Proof
+          ok={r.workflow.settlementStatus === "SETTLED"}
+          label="Escrow payout"
+          value={r.workflow.settlementStatus === "SETTLED" ? `${fmtMon(r.escrow.find((e) => e.action === "FUND")?.amount_wei ?? null, 2)} MON → Worker B` : `escrow ${r.workflow.settlementStatus.toLowerCase()}`}
+          href={accept?.explorer_url}
+          hash={accept?.tx_hash}
+        />
+        <Proof
+          ok={hashMatch === true && allPassed}
+          label="Report integrity"
+          value={hashMatch === true ? "on-chain result hash = this report" : allPassed ? "verification passed; no on-chain hash" : "verification incomplete"}
+          hash={r.report?.sha256}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="min-w-0">
           {r.report ? (
             <article className="prose-report px-5 py-6 sm:px-8">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: (p) => <a {...p} target="_blank" rel="noreferrer noopener" /> }}>
                 {r.report.markdown}
               </ReactMarkdown>
-              <div className="mt-8 border-t border-line pt-3 font-mono text-[11px] text-dim">artifact sha256 {r.report.sha256}</div>
+              <div className="mt-8 border-t border-line pt-3 font-mono text-[11px] text-dim [overflow-wrap:anywhere]">artifact sha256 {r.report.sha256}</div>
             </article>
           ) : (
             <Empty>The report is not ready yet. Workflow status: {r.workflow.status}.</Empty>
@@ -205,6 +235,23 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
     </Shell>
+  );
+}
+
+function Proof({ ok, label, value, href, hash }: { ok: boolean; label: string; value: string; href?: string | null; hash?: string | null }) {
+  return (
+    <div className={`rounded-xl border p-3 ${ok ? "border-ok/30 bg-ok/[0.05]" : "border-warn/30 bg-warn/[0.05]"}`}>
+      <div className="flex items-center gap-2 text-xs text-muted">
+        <BadgeCheck className={`size-4 ${ok ? "text-ok" : "text-warn"}`} aria-hidden /> {label}
+        <span className="sr-only">{ok ? "verified" : "not verified"}</span>
+      </div>
+      <div className="mt-1 text-[13px] font-medium">{value}</div>
+      {hash && (
+        <div className="mt-1 font-mono text-[11px]">
+          {href ? <Ext href={href}>{shortHash(hash, 6)}</Ext> : <span className="text-dim">{shortHash(hash, 6)}</span>}
+        </div>
+      )}
+    </div>
   );
 }
 

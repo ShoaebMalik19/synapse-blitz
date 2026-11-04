@@ -67,6 +67,19 @@ export interface WorkflowListItem {
   created_at: number;
   task_count: number;
   completed_count: number;
+  confirmed_payments: number;
+  recoveries: number;
+  x402_tx: string | null;
+  settle_tx: string | null;
+}
+
+/** The strongest finished run: x402 paid + recovery + escrow settled, newest first. */
+export function bestRun(list: WorkflowListItem[]): WorkflowListItem | null {
+  const score = (w: WorkflowListItem) =>
+    (w.status === "COMPLETED" ? 1 : 0) + (w.settlement_status === "SETTLED" ? 2 : 0) + (w.confirmed_payments === 1 ? 4 : 0) + (w.recoveries > 0 ? 2 : 0);
+  const done = list.filter((w) => w.status === "COMPLETED");
+  if (!done.length) return null;
+  return [...done].sort((a, b) => score(b) - score(a) || b.created_at - a.created_at)[0];
 }
 export interface TaskView {
   taskId: string;
