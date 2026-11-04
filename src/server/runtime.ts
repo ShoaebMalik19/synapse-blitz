@@ -137,16 +137,6 @@ export async function runClaimed(
 ) {
   const { task, attemptId, attemptNo } = claim;
   const wf = db.prepare(`SELECT goal FROM workflows WHERE id = ?`).get(task.workflow_id) as { goal: string };
-  const leaseTimer = setInterval(() => {
-    db.prepare(`UPDATE workflow_tasks SET lease_expires_at=? WHERE workflow_id=? AND task_id=? AND current_attempt_id=?`).run(
-      now() + env().LEASE_MS,
-      task.workflow_id,
-      task.task_id,
-      attemptId,
-    );
-    heartbeatWorker(workerId, "BUSY", db);
-  }, Math.max(500, Math.floor(env().LEASE_MS / 4)));
-
   let seq = claim.checkpoint?.seq ?? 0;
   const resumedFrom: CheckpointState<Record<string, unknown>> | null = claim.checkpoint
     ? {
@@ -158,7 +148,10 @@ export async function runClaimed(
     : null;
   if (claim.checkpoint && resumedFrom) {
     const ok = sha256Hex(stableStringify(resumedFrom.state)) === claim.checkpoint.state_hash;
-    if (!ok) throw new Error("checkpoint integrity check failed (state hash mismatch)");
+    if (!ok) {
+      failAttempt(db, getTask(task.workflow_id, task.task_id, db)!, attemptId, "checkpoint integrity check failed (state hash mismatch)", workerId);
+      throw new Error("checkpoint integrity check failed (state hash mismatch)");
+    }
     emit(task.workflow_id, "checkpoint.loaded", `Loaded checkpoint seq ${claim.checkpoint.seq}: steps done = [${resumedFrom.completedSteps.join(", ")}]`, {
       taskId: task.task_id,
       workerId,
@@ -167,6 +160,16 @@ export async function runClaimed(
       db,
     });
   }
+
+  const leaseTimer = setInterval(() => {
+    db.prepare(`UPDATE workflow_tasks SET lease_expires_at=? WHERE workflow_id=? AND task_id=? AND current_attempt_id=?`).run(
+      now() + env().LEASE_MS,
+      task.workflow_id,
+      task.task_id,
+      attemptId,
+    );
+    heartbeatWorker(workerId, "BUSY", db);
+  }, Math.max(500, Math.floor(env().LEASE_MS / 4)));
 
   const ctx: TaskContext = {
     db,
