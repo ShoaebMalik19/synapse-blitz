@@ -4,7 +4,7 @@
 
 1. Visit the `monad-blitz-devcon-mumbai` repo (link [here](https://github.com/monad-developers/monad-blitz-devcon-mumbai)) and fork it.
 
-![1.png](./screenshots/1.png)
+![1.png](../screenshots/1.png)
 
 2. Give it your project name, a one-liner description, make sure you are forking `main` branch and click `Create Fork`
 
