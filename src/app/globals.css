@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #07070b;
+  --bg-elev: #0c0c13;
+  --surface: #11111a;
+  --surface-2: #161622;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --fg: #ececf3;
+  --fg-muted: #9a9ab0;
+  --fg-dim: #66667a;
+  --violet: #8b5cf6;
+  --violet-soft: rgba(139, 92, 246, 0.14);
+  --blue: #5b8cff;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-elev: var(--bg-elev);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-dim: var(--fg-dim);
+  --color-violet: var(--violet);
+  --color-blue: var(--blue);
+  --color-ok: var(--green);
+  --color-warn: var(--amber);
+  --color-bad: var(--red);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
+.grid-bg {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+.glow {
+  background: radial-gradient(600px 300px at 50% -40px, rgba(139, 92, 246, 0.22), transparent 70%),
+    radial-gradient(500px 260px at 85% 0%, rgba(91, 140, 255, 0.12), transparent 70%);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #c4b5fd 0%, #8b5cf6 40%, #5b8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(139, 92, 246, 0);
+  }
+}
+.pulse-ring {
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+/* Markdown report */
+.prose-report {
+  color: var(--fg);
+  line-height: 1.7;
+  font-size: 15px;
+}
+.prose-report h1 {
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+.prose-report h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.prose-report h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.4rem;
+}
+.prose-report p {
+  margin: 0.5rem 0;
+  color: #d4d4e0;
+}
+.prose-report a {
+  color: #a78bfa;
+  text-decoration: underline;
+  text-decoration-color: rgba(167, 139, 250, 0.35);
+  text-underline-offset: 3px;
+  word-break: break-word;
+}
+.prose-report ul,
+.prose-report ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+.prose-report ul {
+  list-style: disc;
+}
+.prose-report ol {
+  list-style: decimal;
+}
+.prose-report li {
+  margin: 0.3rem 0;
+  color: #d4d4e0;
+}
+.prose-report blockquote {
+  border-left: 2px solid var(--violet);
+  padding: 0.25rem 0 0.25rem 0.9rem;
+  color: var(--fg-muted);
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+.prose-report code {
+  font-family: var(--font-geist-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  word-break: break-all;
+}
+.prose-report table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  display: block;
+  overflow-x: auto;
+}
+.prose-report th,
+.prose-report td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-report th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.prose-report em {
+  color: var(--fg-muted);
+}
+
+/* React Flow dark tweaks */
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.18);
 }

@@ -231,7 +231,8 @@ export function extractFacts(state: ResearchState): Fact[] {
 }
 
 export function buildOutput(state: ResearchState) {
-  const { data: _omit, ...datasetMeta } = state.dataset ?? { status: "MISSING" };
+  const datasetMeta = { ...(state.dataset ?? { status: "MISSING" }) };
+  delete datasetMeta.data;
   return {
     sources: sourcesOf(state),
     facts: state.facts ?? [],

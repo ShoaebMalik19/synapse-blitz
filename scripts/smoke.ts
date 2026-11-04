@@ -14,7 +14,7 @@ approveWorkflow(id, { failureDrill: drill, approveHighValue: false }, db);
 let last = 0;
 for (let i = 0; i < 240; i++) {
   await sleep(1000);
-  const ev = db.prepare(`SELECT id, type, worker_id, task_id, message FROM workflow_events WHERE workflow_id = ? AND id > ? ORDER BY id`).all(id, last) as any[];
+  const ev = db.prepare(`SELECT id, type, worker_id, task_id, message FROM workflow_events WHERE workflow_id = ? AND id > ? ORDER BY id`).all(id, last) as { id: number; type: string; worker_id: string | null; task_id: string | null; message: string }[];
   for (const e of ev) { console.log(`  [${e.type}] ${e.worker_id ?? ""} ${e.task_id ?? ""} ${e.message}`); last = e.id; }
   const v = workflowView(id, db)!;
   if (["COMPLETED", "FAILED", "CANCELLED"].includes(v.workflow.status) && !["SETTLING"].includes(v.workflow.settlementStatus)) {

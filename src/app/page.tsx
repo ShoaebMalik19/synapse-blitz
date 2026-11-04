@@ -1,69 +1,135 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Boxes, CircleDollarSign, GitBranch, LifeBuoy, ShieldCheck, Workflow } from "lucide-react";
+import { Logo } from "@/components/nav";
+import { Badge, ButtonLink } from "@/components/ui";
+
+const pillars = [
+  {
+    icon: Workflow,
+    title: "Plan → validated DAG",
+    body: "An LLM (or deterministic fallback) proposes tasks. Zod + graph checks reject cycles, unknown capabilities and over-budget plans before anything runs.",
+  },
+  {
+    icon: CircleDollarSign,
+    title: "x402 metered purchases",
+    body: "Agents hit a paid API, receive HTTP 402, and a deterministic policy guard checks payee, asset, network and caps before signing an EIP-3009 authorization.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Monad TaskEscrow",
+    body: "The deliverable is committed on-chain, escrow is funded in MON, and payout happens only when the requester accepts the exact verified result hash.",
+  },
+  {
+    icon: LifeBuoy,
+    title: "Checkpointed failover",
+    body: "Workers lease tasks and persist hashed checkpoints. Kill one mid-task and another resumes from stored progress — without re-buying data.",
+  },
+];
+
+const flow = [
+  ["Goal + budget", "Operator sets USDC and MON limits separately"],
+  ["Planner", "Typed DAG, validated deterministically"],
+  ["Escrow commit", "createTask + fundTask on Monad"],
+  ["Worker A", "x402 data purchase, sources, checkpoints"],
+  ["Failover", "Worker B resumes from checkpoint"],
+  ["Verify", "Schema, citations, hashes"],
+  ["Settle", "submitResult → acceptResult on Monad"],
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="glow pointer-events-none absolute inset-x-0 top-0 h-[520px]" />
+      <div className="grid-bg pointer-events-none absolute inset-x-0 top-0 h-[700px]" />
+      <header className="relative z-10 mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <Logo />
+        <div className="flex items-center gap-2">
+          <Link href="https://github.com/ShoaebMalik19/synapse" className="hidden rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg sm:inline">
+            GitHub
+          </Link>
+          <ButtonLink href="/dashboard" variant="outline" className="h-9">
+            Dashboard
+          </ButtonLink>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-6xl px-6">
+        <section className="pb-20 pt-16 text-center sm:pt-24">
+          <div className="mb-6 flex flex-wrap justify-center gap-2">
+            <Badge t="violet">Monad testnet</Badge>
+            <Badge t="blue">x402 v2</Badge>
+            <Badge>Hackathon prototype</Badge>
+          </div>
+          <h1 className="mx-auto max-w-4xl text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
+            Agent workflows that <span className="text-gradient">pay, recover and settle</span> on their own.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted sm:text-lg">
+            Synapse turns a goal and a budget into a verified multi-agent workflow. Independent workers buy data with x402,
+            checkpoint their progress, fail over to each other, and get paid through outcome-based escrow on Monad.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <ButtonLink href="/dashboard" className="h-11 px-5">
+              Launch Synapse <ArrowRight className="size-4" />
+            </ButtonLink>
+            <ButtonLink href="#architecture" variant="outline" className="h-11 px-5">
+              How it works
+            </ButtonLink>
+          </div>
+        </section>
+
+        <section className="grid gap-3 pb-20 sm:grid-cols-2 lg:grid-cols-4">
+          {pillars.map((p) => (
+            <div key={p.title} className="rounded-xl border border-line bg-surface/70 p-5">
+              <p.icon className="size-5 text-violet" />
+              <h3 className="mt-4 text-[15px] font-medium">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
+            </div>
+          ))}
+        </section>
+
+        <section id="architecture" className="pb-20">
+          <div className="mb-6 flex items-center gap-2 text-sm text-muted">
+            <GitBranch className="size-4 text-violet" /> Execution path of one workflow
+          </div>
+          <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
+            {flow.map(([t, d], i) => (
+              <li key={t} className="relative rounded-xl border border-line bg-elev p-4">
+                <div className="font-mono text-[11px] text-dim">{String(i + 1).padStart(2, "0")}</div>
+                <div className="mt-2 text-sm font-medium">{t}</div>
+                <div className="mt-1 text-xs leading-relaxed text-muted">{d}</div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="grid gap-4 pb-24 lg:grid-cols-2">
+          <div className="rounded-xl border border-line bg-surface/70 p-6">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Boxes className="size-4 text-violet" /> On-chain (Monad)
+            </div>
+            <ul className="mt-4 space-y-2 text-sm text-muted">
+              <li>• Task commitment: id, requester, payee, verifier, deadline, spec hash</li>
+              <li>• Native-MON escrow, result hash, settlement / refund events</li>
+              <li>• x402 USDC settlement (EIP-3009 transferWithAuthorization via facilitator)</li>
+              <li>• No admin withdrawal path; payout bound to the accepted result hash</li>
+            </ul>
+          </div>
+          <div className="rounded-xl border border-line bg-surface/70 p-6">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Workflow className="size-4 text-blue" /> Off-chain (Synapse orchestrator)
+            </div>
+            <ul className="mt-4 space-y-2 text-sm text-muted">
+              <li>• Planning, prompts, worker execution and raw outputs</li>
+              <li>• Leases, heartbeats, checkpoints, retries and the event log (SQLite)</li>
+              <li>• Deterministic policy guard and output verification</li>
+              <li>• Prototype worker registry — allowlisted, not a permissionless market</li>
+            </ul>
+          </div>
+        </section>
       </main>
+      <footer className="relative z-10 border-t border-line py-8 text-center text-xs text-dim">
+        Synapse prototype · testnet only · on-chain receipts prove payment and settlement, not the quality of AI output.
+      </footer>
     </div>
   );
 }
