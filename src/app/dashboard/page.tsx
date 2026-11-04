@@ -3,33 +3,42 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Brain, Check, ChevronRight, CircleDollarSign, ClipboardCheck, History, Landmark, PenLine, Server, TriangleAlert } from "lucide-react";
+import { ArrowRight, Brain, Check, ChevronDown, ChevronRight, CircleDollarSign, ClipboardCheck, FileText, History, Landmark, PenLine, PlayCircle, RotateCcw, Server, TriangleAlert } from "lucide-react";
 import { Nav } from "@/components/nav";
-import { Badge, Button, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Heartbeat, Meter, Mono, Spinner, StatusBadge, cx } from "@/components/ui";
-import { api, ApiError, fmtMon, fmtUsdc, shortHash, timeAgo, type Budget, type NetworkStatus, type WorkerInfo, type WorkflowListItem } from "@/lib/client";
+import { deriveStory, StoryStepper } from "@/components/story";
+import { Badge, Button, ButtonLink, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Heartbeat, Meter, Mono, Spinner, StatusBadge, cx } from "@/components/ui";
+import {
+  api,
+  ApiError,
+  bestRun,
+  fmtMon,
+  fmtUsdc,
+  shortHash,
+  timeAgo,
+  type Budget,
+  type NetworkStatus,
+  type PaymentsResponse,
+  type WorkerInfo,
+  type WorkflowDetail,
+  type WorkflowListItem,
+} from "@/lib/client";
 
 const DEFAULT_GOAL = "Research the Monad ecosystem and generate an actionable technical briefing.";
-
-function useAuthRedirect() {
-  const router = useRouter();
-  return useCallback(
-    (e: unknown) => {
-      if (e instanceof ApiError && e.status === 401) router.push("/login?next=/dashboard");
-    },
-    [router],
-  );
-}
+const EXAMPLES = [
+  DEFAULT_GOAL,
+  "Assess Monad developer tooling and infrastructure gaps for teams building agent payment products, and recommend what to build first.",
+  "Analyze Monad DeFi liquidity concentration and summarize the main risks for a new lending protocol.",
+];
+const EXPLORER = "https://testnet.monadvision.com/tx/";
 
 function NumberField({ id, label, unit, value, onChange, step, max, hint }: { id: string; label: string; unit: string; value: number; onChange: (n: number) => void; step: number; max: number; hint?: string }) {
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-        <label htmlFor={id} className="font-medium text-muted">
-          {label}
-        </label>
+      <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted">
+        <span>{label}</span>
         <span className="font-mono text-[10.5px] text-dim">max {max}</span>
-      </div>
-      <div className="flex h-10 items-center rounded-[4px] border border-line-strong bg-field focus-within:border-fg">
+      </label>
+      <div className="flex h-11 items-center rounded-[4px] border border-line-strong bg-field focus-within:border-fg">
         <input
           id={id}
           type="number"
@@ -50,15 +59,23 @@ function NumberField({ id, label, unit, value, onChange, step, max, hint }: { id
 
 export default function Dashboard() {
   const router = useRouter();
-  const onErr = useAuthRedirect();
   const [net, setNet] = useState<NetworkStatus | null>(null);
   const [netErr, setNetErr] = useState<string | null>(null);
   const [workers, setWorkers] = useState<WorkerInfo[]>([]);
   const [flows, setFlows] = useState<WorkflowListItem[] | null>(null);
   const [goal, setGoal] = useState(DEFAULT_GOAL);
   const [budget, setBudget] = useState<Budget | null>(null);
+  const [showBudget, setShowBudget] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [featured, setFeatured] = useState<{ wf: WorkflowDetail; pay: PaymentsResponse } | null>(null);
+
+  const onErr = useCallback(
+    (e: unknown) => {
+      if (e instanceof ApiError && e.status === 401) router.push("/login?next=/dashboard");
+    },
+    [router],
+  );
 
   const load = useCallback(async () => {
     api<{ workflows: WorkflowListItem[] }>("/api/workflows")
@@ -79,11 +96,20 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, [load]);
 
+  const best = flows ? bestRun(flows) : null;
+  const bestId = best?.id;
+  useEffect(() => {
+    if (!bestId) return;
+    Promise.all([api<WorkflowDetail>(`/api/workflows/${bestId}`), api<PaymentsResponse>(`/api/workflows/${bestId}/payments`)])
+      .then(([wf, pay]) => setFeatured({ wf, pay }))
+      .catch(() => null);
+  }, [bestId]);
+
   const max = net?.policyDefaults;
   const set = (k: keyof Budget) => (v: number) => setBudget((b) => (b ? { ...b, [k]: v } : b));
   const opMon = net?.operator?.balances?.monWei;
   const opUsdc = net?.operator?.balances?.usdcBase;
-
+  const plannerText = net ? (net.llm.configured ? `${net.llm.provider} · ${net.llm.model}` : "Rule-based planner (no LLM key)") : "…";
   const checks = net
     ? [
         { label: "Chain", ok: net.chain.match, value: <Mono>{`${net.chain.rpcChainId ?? "?"} ${net.chain.match ? "· expected" : `≠ ${net.chain.expectedChainId}`}`}</Mono>, sub: `block ${net.chain.blockNumber ?? "?"}` },
@@ -93,7 +119,7 @@ export default function Dashboard() {
           value: net.operator ? <Ext href={net.operator.explorer}><Mono>{shortHash(net.operator.address, 4)}</Mono></Ext> : "Not configured",
           sub: net.operator ? undefined : "Set OPERATOR_PRIVATE_KEY in .env",
         },
-        { label: "MON for escrow + gas", ok: Boolean(opMon && BigInt(opMon) > 0n), value: <Mono>{fmtMon(opMon)} MON</Mono>, sub: opMon === "0" ? "Get MON at faucet.monad.xyz" : undefined },
+        { label: "MON for escrow + gas", ok: Boolean(opMon && BigInt(opMon) > 0n), value: <Mono>{fmtMon(opMon, 3)} MON</Mono>, sub: opMon === "0" ? "Get MON at faucet.monad.xyz" : undefined },
         { label: "USDC for data", ok: Boolean(opUsdc && BigInt(opUsdc) > 0n), value: <Mono>{fmtUsdc(opUsdc)} USDC</Mono>, sub: opUsdc === "0" ? "Get USDC at faucet.circle.com" : undefined },
         {
           label: "TaskEscrow contract",
@@ -110,32 +136,35 @@ export default function Dashboard() {
   const online = workers.filter((w) => w.status === "ONLINE" || w.status === "BUSY").length;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <Nav />
-      <main className="mx-auto max-w-[1400px] space-y-6 px-4 py-8 sm:px-6">
+      <main id="main" className="mx-auto max-w-[1400px] space-y-6 px-4 py-8 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="placard text-dim">Operator console</p>
             <h1 className="font-display mt-1 text-[clamp(1.9rem,3.2vw,2.6rem)] font-semibold leading-none">File a flight plan</h1>
-            <p className="mt-2 max-w-[60ch] text-sm text-muted">Give Synapse a goal and spending limits. It plans, buys data, recovers from crashes and settles on Monad — and records all of it.</p>
+            <p className="mt-2 max-w-[60ch] text-sm text-muted">Describe a research goal. Synapse drafts a plan; nothing runs, pays or settles until you approve it.</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={cx("placard inline-flex items-center gap-2 rounded-[3px] border-2 px-3 py-1.5", !net ? "border-line-strong text-dim" : go ? "border-ok text-ok" : "border-warn text-warn")}>
-              {!net ? <Spinner /> : go ? <Check className="size-3.5" /> : <TriangleAlert className="size-3.5" />}
+            <a
+              href="#preflight"
+              className={cx("placard inline-flex items-center gap-2 rounded-[3px] border-2 px-3 py-1.5", !net ? "border-line-strong text-dim" : go ? "border-ok text-ok" : "border-warn text-warn")}
+            >
+              {!net ? <Spinner /> : go ? <Check className="size-3.5" aria-hidden /> : <TriangleAlert className="size-3.5" aria-hidden />}
               Preflight {!net ? "…" : go ? "GO" : `NO-GO · ${failing}`}
-            </span>
+            </a>
             <span className="placard inline-flex items-center gap-2 rounded-[3px] border-2 border-line-strong px-3 py-1.5 text-muted">
               Workers {online}/{workers.length || 2}
             </span>
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-          {/* Composer */}
-          <Card>
-            <CardHeader title="New workflow" icon={<PenLine />} sub="The AI proposes a plan; fixed rules decide what it may spend." />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          {/* Primary action: draft a plan */}
+          <Card className="border-2 border-fg">
+            <CardHeader title="New workflow" icon={<PenLine aria-hidden />} sub="Step 1 of 2 — generate a draft. You review and approve it on the next screen." />
             <form
-              className="space-y-6 p-5"
+              className="space-y-5 p-5"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!budget) return;
@@ -146,7 +175,7 @@ export default function Dashboard() {
                   router.push(`/workflows/${r.id}`);
                 } catch (e) {
                   onErr(e);
-                  setErr(e instanceof ApiError ? [e.message, ...(e.issues ?? [])].join(" · ") : "Couldn't create the workflow. Check that the server is running.");
+                  setErr(e instanceof ApiError ? e.message : "Failed to create the draft — check that the server is running.");
                   setBusy(false);
                 }
               }}
@@ -161,149 +190,187 @@ export default function Dashboard() {
                   onChange={(e) => setGoal(e.target.value)}
                   rows={3}
                   maxLength={500}
+                  aria-describedby={err ? "goal-error" : "goal-help"}
+                  aria-invalid={Boolean(err)}
                   className="w-full resize-none rounded-[4px] border border-line-strong bg-field px-3 py-2.5 text-[15px] leading-relaxed outline-none focus:border-fg"
                 />
-                <div className="mt-1 text-right font-mono text-[10.5px] text-dim">{goal.length}/500</div>
+                <div id="goal-help" className="mt-1.5 flex flex-wrap gap-1.5">
+                  {EXAMPLES.map((g, i) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGoal(g)}
+                      aria-pressed={goal === g}
+                      className={cx("cursor-pointer rounded-[3px] border px-2.5 py-1.5 text-[11.5px] transition-colors", goal === g ? "border-fg bg-fg text-bg" : "border-line-strong text-muted hover:border-fg/40 hover:text-fg")}
+                    >
+                      {["Ecosystem briefing", "Tooling gaps", "DeFi risk"][i]}
+                    </button>
+                  ))}
+                </div>
+                {err && (
+                  <div id="goal-error" role="alert" className="mt-2">
+                    <ErrorNote>{err}</ErrorNote>
+                  </div>
+                )}
               </div>
 
-              {budget && max ? (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <fieldset className="space-y-3 rounded-[4px] border border-line p-4">
-                      <legend className="placard flex items-center gap-2 px-1 text-fg">
-                        <CircleDollarSign className="size-3.5 text-blue" /> Data purchases · USDC
-                      </legend>
-                      <NumberField id="x402" label="Total x402 budget" unit="USDC" value={budget.x402Usdc} onChange={set("x402Usdc")} step={0.01} max={max.x402Usdc} />
-                      <div className="grid grid-cols-2 gap-3">
-                        <NumberField id="percall" label="Per-call cap" unit="USDC" value={budget.perCallUsdc} onChange={set("perCallUsdc")} step={0.005} max={max.perCallUsdc} />
-                        <NumberField id="approve" label="Ask me above" unit="USDC" value={budget.approvalThresholdUsdc} onChange={set("approvalThresholdUsdc")} step={0.005} max={max.approvalThresholdUsdc} />
-                      </div>
-                    </fieldset>
-                    <fieldset className="space-y-3 rounded-[4px] border border-line p-4">
-                      <legend className="placard flex items-center gap-2 px-1 text-fg">
-                        <Landmark className="size-3.5 text-accent-ink" /> Escrow & gas · MON
-                      </legend>
-                      <NumberField id="escrow" label="Escrow payout" unit="MON" value={budget.escrowMon} onChange={set("escrowMon")} step={0.001} max={max.escrowMon} hint="Locked on Monad; paid only for the accepted result" />
-                      <NumberField id="gas" label="Gas allowance" unit="MON" value={budget.gasMon} onChange={set("gasMon")} step={0.01} max={max.gasMon} />
-                    </fieldset>
-                  </div>
-
-                  {/* Budget envelope: shows how the caps nest inside the total */}
-                  <div className="rounded-[4px] border border-dashed border-line-strong p-4">
-                    <Meter
-                      label="Spending envelope"
-                      value={0}
-                      max={budget.x402Usdc || 1}
-                      unit="USDC"
-                      ticks={[
-                        { at: budget.approvalThresholdUsdc, label: "ask" },
-                        { at: budget.perCallUsdc, label: "cap" },
-                      ].filter((t) => t.at > 0 && t.at <= budget.x402Usdc)}
-                    />
-                    <p className="text-[11px] leading-relaxed text-dim">
-                      Marks show when you are asked to approve (ask) and the per-call cap (cap). Any single purchase above the cap is refused before signing. USDC and MON are separate budgets and are never converted. Server limits cap every field, so you can only lower them.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 text-sm text-dim">
-                  <Spinner /> Loading policy limits…
-                </div>
-              )}
-
-              {err && <ErrorNote>{err}</ErrorNote>}
-              <div className="flex flex-wrap items-center gap-4 border-t border-line pt-5">
-                <Button type="submit" className="h-11 px-5" disabled={busy || !budget || goal.trim().length < 10}>
-                  {busy ? <Spinner /> : <Brain className="size-4" />} {busy ? `Planning${net?.llm.provider ? ` with ${net.llm.provider}` : ""}…` : "Generate plan"}
-                </Button>
-                <span className="text-xs text-dim">
-                  {net ? (
-                    net.llm.configured ? (
+              {/* Spending limits: summary first, details on demand */}
+              <div className="rounded-[4px] border border-line-strong bg-bg">
+                <button
+                  type="button"
+                  onClick={() => setShowBudget((v) => !v)}
+                  aria-expanded={showBudget}
+                  aria-controls="budget-panel"
+                  className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2.5 text-left"
+                >
+                  <span className="placard text-fg">Spending limits</span>
+                  <span className="flex flex-wrap items-center justify-end gap-1.5">
+                    {budget ? (
                       <>
-                        Planner <Mono className="text-muted">{net.llm.provider} · {net.llm.model}</Mono>, checked by fixed rules. Falls back to rule-based if the AI fails.
+                        <Badge t="blue">x402 ≤ {budget.x402Usdc} USDC</Badge>
+                        <Badge t="blue">{budget.perCallUsdc}/call</Badge>
+                        <Badge t="ink">escrow {budget.escrowMon} MON</Badge>
                       </>
                     ) : (
-                      "Rule-based planner (no AI key configured)."
-                    )
-                  ) : (
-                    "…"
-                  )}
+                      <Spinner />
+                    )}
+                    <ChevronDown className={cx("size-4 text-dim transition-transform", showBudget && "rotate-180")} aria-hidden />
+                  </span>
+                </button>
+                {showBudget && budget && max && (
+                  <div id="budget-panel" className="grid gap-4 border-t border-line p-3 md:grid-cols-2">
+                    <fieldset className="space-y-3">
+                      <legend className="placard mb-2 flex items-center gap-2 text-fg">
+                        <CircleDollarSign className="size-3.5 text-blue" aria-hidden /> x402 data purchases (USDC)
+                      </legend>
+                      <NumberField id="b-x402" label="Total x402 budget" unit="USDC" value={budget.x402Usdc} onChange={set("x402Usdc")} step={0.01} max={max.x402Usdc} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <NumberField id="b-call" label="Per-call cap" unit="USDC" value={budget.perCallUsdc} onChange={set("perCallUsdc")} step={0.005} max={max.perCallUsdc} />
+                        <NumberField id="b-appr" label="Approval above" unit="USDC" value={budget.approvalThresholdUsdc} onChange={set("approvalThresholdUsdc")} step={0.005} max={max.approvalThresholdUsdc} />
+                      </div>
+                    </fieldset>
+                    <fieldset className="space-y-3">
+                      <legend className="placard mb-2 flex items-center gap-2 text-fg">
+                        <Landmark className="size-3.5 text-accent-ink" aria-hidden /> Monad escrow & gas (MON)
+                      </legend>
+                      <NumberField id="b-esc" label="Escrow payout" unit="MON" value={budget.escrowMon} onChange={set("escrowMon")} step={0.001} max={max.escrowMon} hint="Locked in TaskEscrow; paid on the accepted result" />
+                      <NumberField id="b-gas" label="Gas allowance" unit="MON" value={budget.gasMon} onChange={set("gasMon")} step={0.01} max={max.gasMon} />
+                    </fieldset>
+                    <div className="border-t border-dashed border-line-strong pt-3 md:col-span-2">
+                      <Meter
+                        label="Spending envelope"
+                        value={0}
+                        max={budget.x402Usdc || 1}
+                        unit="USDC"
+                        ticks={[
+                          { at: budget.approvalThresholdUsdc, label: "ask" },
+                          { at: budget.perCallUsdc, label: "cap" },
+                        ].filter((t) => t.at > 0 && t.at <= budget.x402Usdc)}
+                      />
+                      <p className="text-[11px] leading-relaxed text-dim">
+                        You are asked to approve above “ask”; any single purchase above “cap” is refused before signing. USDC and MON are separate budgets and never converted. Server ceilings cap every field; you can only lower them.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 border-t border-line pt-5">
+                <Button type="submit" className="h-11 px-5" disabled={busy || !budget || goal.trim().length < 10}>
+                  {busy ? <Spinner /> : <Brain className="size-4" aria-hidden />} {busy ? `Planning${net?.llm.provider ? ` with ${net.llm.provider}` : ""}…` : "Generate plan"}
+                </Button>
+                <span className="text-xs text-dim">
+                  Planner: <span className={net?.llm.configured ? "text-blue" : "text-warn"}>{plannerText}</span>
+                  {net?.llm.configured && " · validated by DAG checks · rule-based fallback on provider errors"}
                 </span>
               </div>
             </form>
           </Card>
 
-          {/* Preflight */}
-          <Card>
-            <CardHeader title="Preflight checklist" icon={<ClipboardCheck />} sub="Signing keys stay on the server and never reach the browser." />
-            <div className="p-2">
-              {netErr && (
-                <div className="p-2">
-                  <ErrorNote>{netErr}</ErrorNote>
+          {/* Featured replay of the proven run */}
+          <Card className="flex flex-col">
+            <CardHeader
+              title="Replay the proven run"
+              icon={<PlayCircle aria-hidden />}
+              sub="Already on Monad testnet — opening it spends nothing"
+              right={best ? <StatusBadge s={best.settlement_status === "SETTLED" ? "SETTLED" : best.status} /> : undefined}
+            />
+            {best && featured?.wf.workflow.id === best.id ? (
+              <div className="flex flex-1 flex-col gap-3 p-4">
+                <div>
+                  <div className="text-[15px] font-semibold leading-snug">{best.goal}</div>
+                  <div className="mt-1 font-mono text-[11px] text-dim">
+                    {best.id} · {timeAgo(best.created_at)}
+                  </div>
                 </div>
-              )}
-              {!net && !netErr && (
-                <div className="flex items-center gap-2 p-3 text-sm text-dim">
-                  <Spinner /> Checking Monad RPC, facilitator and services…
+                <StoryStepper steps={deriveStory(featured.wf, featured.pay.payments, featured.pay.escrow)} compact />
+                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+                  {best.x402_tx && <Ext href={`${EXPLORER}${best.x402_tx}`}>x402 tx {shortHash(best.x402_tx, 4)}</Ext>}
+                  {best.settle_tx && <Ext href={`${EXPLORER}${best.settle_tx}`}>escrow payout {shortHash(best.settle_tx, 4)}</Ext>}
                 </div>
-              )}
-              <ul>
-                {checks.map((c) => (
-                  <li key={c.label} className="flex items-start justify-between gap-3 rounded-[3px] px-2 py-2.5 hover:bg-fg/[0.03]">
-                    <span className="flex items-start gap-2.5">
-                      <span className={cx("mt-0.5 grid size-4 shrink-0 place-items-center rounded-[2px] border", c.ok ? "border-ok bg-ok text-surface" : "border-warn text-warn")} aria-hidden>
-                        {c.ok ? <Check className="size-3" strokeWidth={3} /> : <span className="text-[10px] font-bold leading-none">!</span>}
-                      </span>
-                      <span>
-                        <span className="block text-[13px] font-medium">
-                          {c.label}
-                          <span className="sr-only">{c.ok ? " — passed" : " — needs attention"}</span>
-                        </span>
-                        {c.sub && <span className={cx("block text-[11px]", c.ok ? "text-dim" : "text-warn")}>{c.sub}</span>}
-                      </span>
-                    </span>
-                    <span className="min-w-0 truncate pt-0.5 text-right text-[13px]">{c.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                <div className="mt-auto flex flex-wrap gap-2 pt-1">
+                  <ButtonLink href={`/workflows/${best.id}`}>
+                    Open run <ArrowRight className="size-4" aria-hidden />
+                  </ButtonLink>
+                  <ButtonLink href={`/workflows/${best.id}/result`} variant="outline">
+                    <FileText className="size-4" aria-hidden /> Briefing
+                  </ButtonLink>
+                </div>
+              </div>
+            ) : flows && !best ? (
+              <div className="flex flex-1 flex-col items-start justify-center gap-2 px-5 py-10">
+                <p className="font-display text-xl font-semibold">No recorded run yet</p>
+                <p className="max-w-[42ch] text-sm text-muted">Generate and approve a plan with the failure drill on. Your first completed run shows up here, ready to replay for judges.</p>
+              </div>
+            ) : (
+              <Empty>
+                <Spinner />
+              </Empty>
+            )}
           </Card>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-          <Card>
-            <CardHeader title="Flight log" icon={<History />} sub="Every workflow, newest first." right={flows?.length ? <span className="font-mono text-[11px] text-dim">{flows.length} runs</span> : undefined} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <Card className="min-w-0">
+            <CardHeader title="Flight log" icon={<History aria-hidden />} sub="Every workflow, newest first. Drafts stay here until approved." />
             {flows === null ? (
               <Empty>
                 <Spinner />
               </Empty>
             ) : flows.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="font-display text-xl font-semibold">No flights recorded yet</p>
-                <p className="mx-auto mt-1 max-w-[42ch] text-sm text-muted">Generate your first plan above. Keep the failure drill on to record a crash and a recovery for your demo.</p>
-              </div>
+              <Empty>No workflows yet — generate your first plan above.</Empty>
             ) : (
               <ul className="divide-y divide-line">
                 {flows.map((f) => (
                   <li key={f.id}>
-                    <Link href={`/workflows/${f.id}`} className="group flex items-center gap-3 px-4 py-3 hover:bg-fg/[0.03]">
+                    <Link href={`/workflows/${f.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-fg/[0.03]">
                       <Dot s={f.status} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{f.goal}</div>
-                        <div className="mt-0.5 flex flex-wrap gap-x-3 font-mono text-[11px] text-dim">
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-dim">
                           <span>{f.id}</span>
                           <span>
                             {f.completed_count}/{f.task_count} tasks
                           </span>
-                          <span>{f.planner}</span>
+                          <span className={f.planner.startsWith("groq") ? "text-blue" : ""}>{f.planner}</span>
                           <span>{timeAgo(f.created_at)}</span>
                         </div>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {f.status === "APPROVAL_REQUIRED" && <Badge t="warn">draft · awaiting approval</Badge>}
+                          {f.confirmed_payments > 0 && <Badge t="ok">x402 paid ×{f.confirmed_payments}</Badge>}
+                          {f.recoveries > 0 && (
+                            <Badge t="warn">
+                              <RotateCcw className="size-3" aria-hidden /> recovered
+                            </Badge>
+                          )}
+                          {f.settlement_status === "SETTLED" && <Badge t="ok">escrow settled</Badge>}
+                          {f.status === "COMPLETED" && f.settlement_status !== "SETTLED" && <Badge t="warn">escrow {f.settlement_status.toLowerCase()}</Badge>}
+                        </div>
                       </div>
-                      <div className="hidden flex-col items-end gap-1 sm:flex">
+                      <div className="hidden sm:block">
                         <StatusBadge s={f.status} />
-                        <span className="font-mono text-[10px] text-dim">escrow {f.settlement_status.toLowerCase().replace(/_/g, " ")}</span>
                       </div>
-                      <ChevronRight className="size-4 text-dim transition-transform group-hover:translate-x-0.5" />
+                      <ChevronRight className="size-4 shrink-0 text-dim transition-transform group-hover:translate-x-0.5" aria-hidden />
                     </Link>
                   </li>
                 ))}
@@ -311,13 +378,52 @@ export default function Dashboard() {
             )}
           </Card>
 
-          <Card>
-            <CardHeader title="Crew" icon={<Server />} sub="Two independent worker processes. If one dies, the other takes over." />
-            <div className="space-y-3 p-4">
-              {workers.map((w) => {
-                const alive = w.status === "ONLINE" || w.status === "BUSY";
-                return (
-                  <div key={w.id} className="rounded-[4px] border border-line-strong bg-bg p-3">
+          <div className="space-y-5">
+            <Card id="preflight" className="scroll-mt-20">
+              <CardHeader title="Preflight checklist" icon={<ClipboardCheck aria-hidden />} sub="Signing keys stay on the server and never reach the browser." />
+              <div className="p-2">
+                {netErr && (
+                  <div className="p-2">
+                    <ErrorNote>{netErr}</ErrorNote>
+                  </div>
+                )}
+                {!net && !netErr && (
+                  <div className="flex items-center gap-2 p-3 text-sm text-dim">
+                    <Spinner /> Checking Monad RPC, facilitator and services…
+                  </div>
+                )}
+                <ul>
+                  {checks.map((c) => (
+                    <li key={c.label} className="flex items-start justify-between gap-3 rounded-[3px] px-2 py-2.5 hover:bg-fg/[0.03]">
+                      <span className="flex items-start gap-2.5">
+                        <span className={cx("mt-0.5 grid size-4 shrink-0 place-items-center rounded-[2px] border", c.ok ? "border-ok bg-ok text-surface" : "border-warn text-warn")} aria-hidden>
+                          {c.ok ? <Check className="size-3" strokeWidth={3} /> : <span className="text-[10px] font-bold leading-none">!</span>}
+                        </span>
+                        <span>
+                          <span className="block text-[13px] font-medium">
+                            {c.label}
+                            <span className="sr-only">{c.ok ? " — passed" : " — needs attention"}</span>
+                          </span>
+                          {c.sub && <span className={cx("block text-[11px]", c.ok ? "text-dim" : "text-warn")}>{c.sub}</span>}
+                        </span>
+                      </span>
+                      <span className="min-w-0 truncate pt-0.5 text-right text-[13px]">{c.value}</span>
+                    </li>
+                  ))}
+                </ul>
+                {net && (
+                  <p className="border-t border-dashed border-line-strong px-2 pb-1 pt-2.5 text-[11px] text-dim">
+                    Planner: <span className={net.llm.configured ? "text-blue" : "text-warn"}>{plannerText}</span>. Optional; the rule-based planner works without it.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader title="Crew" icon={<Server aria-hidden />} sub="Two independent worker processes. If one dies, the other takes over." />
+              <ul className="divide-y divide-line">
+                {workers.map((w) => (
+                  <li key={w.id} className="px-4 py-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm font-semibold">
                         <span className="inline-block h-3.5 w-1 rounded-[1px]" style={{ background: w.id === "worker-a" ? "var(--blue)" : "var(--wb)" }} aria-hidden />
@@ -325,9 +431,8 @@ export default function Dashboard() {
                       </div>
                       <StatusBadge s={w.status} />
                     </div>
-                    <Heartbeat online={alive} className="mt-2" />
-                    <p className="mt-1 text-xs leading-relaxed text-muted">{w.description}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Heartbeat online={w.status === "ONLINE" || w.status === "BUSY"} className="mt-1.5" />
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {w.capabilities.map((c) => (
                         <Badge key={c} t="ink">
                           {c}
@@ -339,19 +444,19 @@ export default function Dashboard() {
                         </Badge>
                       ))}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-x-3 font-mono text-[10.5px] text-dim">
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 font-mono text-[10.5px] text-dim">
                       <span>pid {w.pid ?? "—"}</span>
                       <span>heartbeat {timeAgo(w.lastHeartbeat)}</span>
-                      <span>payee {shortHash(w.payee, 4)}</span>
                     </div>
-                  </div>
-                );
-              })}
-              {!workers.length && <Empty>Loading workers…</Empty>}
-            </div>
-          </Card>
+                  </li>
+                ))}
+                {!workers.length && <Empty>Loading workers…</Empty>}
+              </ul>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
   );
 }
+

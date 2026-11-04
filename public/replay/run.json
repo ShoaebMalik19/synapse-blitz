@@ -1,0 +1,942 @@
+{
+ "exportedAt": "2026-11-04",
+ "network": "Monad Testnet (chain 10143)",
+ "escrowContract": "0x097dc98f0cfcb46d98569bac7f987c8e22359f10",
+ "workflow": {
+  "id": "wf_a4198e6b7d13412b",
+  "goal": "Research the Monad ecosystem and generate an actionable technical briefing.",
+  "status": "COMPLETED",
+  "planner": "rule-based",
+  "plan_hash": "0xfc738752371d77c2052a6020a85a0860d9648ca035752f656f06f2ccb7700797",
+  "settlement_status": "SETTLED",
+  "created_at": 1793784802709
+ },
+ "tasks": [
+  {
+   "task_id": "research",
+   "title": "Gather Monad ecosystem evidence",
+   "capability": "research",
+   "status": "COMPLETED",
+   "attempts": 2,
+   "result_hash": "0xa7855d5454af4c5757ecb397e1ba54c4621884c54bbdf77f9de6739fbc5b417e",
+   "dependencies": []
+  },
+  {
+   "task_id": "analysis",
+   "title": "Analyze ecosystem signals",
+   "capability": "analysis",
+   "status": "COMPLETED",
+   "attempts": 1,
+   "result_hash": "0x1dc587b98a35a83474a2091ee592b7c13c25672624abf981ff75730a7f9747d8",
+   "dependencies": [
+    "research"
+   ]
+  },
+  {
+   "task_id": "briefing",
+   "title": "Synthesize technical briefing",
+   "capability": "synthesis",
+   "status": "COMPLETED",
+   "attempts": 1,
+   "result_hash": "0x9a431f2c75d43bdf30755f29edc27b89f53576b9c5326ebd11a75251b70c86ed",
+   "dependencies": [
+    "analysis"
+   ]
+  }
+ ],
+ "attempts": [
+  {
+   "attempt_no": 1,
+   "task_id": "research",
+   "worker_id": "worker-a",
+   "kind": "INITIAL",
+   "status": "FAILED",
+   "resumed_from_checkpoint": null,
+   "failure_reason": "lease expired (worker heartbeat lost)",
+   "started_at": 1793784812942,
+   "ended_at": 1793784829411
+  },
+  {
+   "attempt_no": 2,
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "kind": "RECOVERY",
+   "status": "SUCCEEDED",
+   "resumed_from_checkpoint": "cp_194d1916843075b8",
+   "failure_reason": null,
+   "started_at": 1793784830368,
+   "ended_at": 1793784842773
+  },
+  {
+   "attempt_no": 1,
+   "task_id": "analysis",
+   "worker_id": "worker-b",
+   "kind": "INITIAL",
+   "status": "SUCCEEDED",
+   "resumed_from_checkpoint": null,
+   "failure_reason": null,
+   "started_at": 1793784844489,
+   "ended_at": 1793784846008
+  },
+  {
+   "attempt_no": 1,
+   "task_id": "briefing",
+   "worker_id": "worker-b",
+   "kind": "INITIAL",
+   "status": "SUCCEEDED",
+   "resumed_from_checkpoint": null,
+   "failure_reason": null,
+   "started_at": 1793784847519,
+   "ended_at": 1793784849043
+  }
+ ],
+ "checkpoints": [
+  {
+   "id": "cp_194d1916843075b8",
+   "task_id": "research",
+   "worker_id": "worker-a",
+   "seq": 1,
+   "state_hash": "0x0bd55dbea79d545ce80ee897b23fb7387ac5faad79fbd8b7af20482538ba986a",
+   "created_at": 1793784821305,
+   "completed_steps": [
+    "purchase_dataset"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_2f7e6bbd0ccf9f57",
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "seq": 2,
+   "state_hash": "0x8abbc0c4369e6a86cc5c9ed9451035b6bac20caf03b86538732c71a1d6adb78e",
+   "created_at": 1793784831997,
+   "completed_steps": [
+    "purchase_dataset",
+    "policy_probe_premium"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_24fd103f5362c7b6",
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "seq": 3,
+   "state_hash": "0x128fdde27bd6c9af94aad34ce2959523f92a7fdd065d1d3383ba09ac7b5f2291",
+   "created_at": 1793784834832,
+   "completed_steps": [
+    "purchase_dataset",
+    "policy_probe_premium",
+    "monad_docs"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_abeaa85b1eb4921d",
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "seq": 4,
+   "state_hash": "0x71d58a62be55e2ec5c8510b65a7a0ddcbb211f959fbf41c7778550fd228b6862",
+   "created_at": 1793784838953,
+   "completed_steps": [
+    "purchase_dataset",
+    "policy_probe_premium",
+    "monad_docs",
+    "github_activity"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_29b1b48e325bcd43",
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "seq": 5,
+   "state_hash": "0xaf4377b33cb8fae0eba07023b9721ba4f660b70fbf1f4d8c52fea1557effd46f",
+   "created_at": 1793784841263,
+   "completed_steps": [
+    "purchase_dataset",
+    "policy_probe_premium",
+    "monad_docs",
+    "github_activity",
+    "network_probe"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_4d0a3bc6bd1bbee2",
+   "task_id": "research",
+   "worker_id": "worker-b",
+   "seq": 6,
+   "state_hash": "0x8a8178a48ca1194f94be974690b62bdc141659b612927d145a29c6b52a7950a4",
+   "created_at": 1793784842771,
+   "completed_steps": [
+    "purchase_dataset",
+    "policy_probe_premium",
+    "monad_docs",
+    "github_activity",
+    "network_probe",
+    "extract_facts"
+   ],
+   "payment_ops": 1
+  },
+  {
+   "id": "cp_9f2ddf730fd8ca61",
+   "task_id": "analysis",
+   "worker_id": "worker-b",
+   "seq": 1,
+   "state_hash": "0xf4216ff2b327f0125ae1611d9a1e1bb402095e4a8b1cb0f86e10290dafab6f55",
+   "created_at": 1793784846004,
+   "completed_steps": [
+    "analyze"
+   ],
+   "payment_ops": 0
+  },
+  {
+   "id": "cp_7a7e3016e9566d27",
+   "task_id": "briefing",
+   "worker_id": "worker-b",
+   "seq": 1,
+   "state_hash": "0xa72f0eb5270138b5a9bc0e25ace04ce294a5cf0c95aa25588c7ebf644e686c27",
+   "created_at": 1793784849039,
+   "completed_steps": [
+    "render"
+   ],
+   "payment_ops": 0
+  }
+ ],
+ "events": [
+  {
+   "type": "workflow.created",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Workflow created; 3-task DAG generated by rule-based",
+   "created_at": 1793784802738,
+   "explorer": null
+  },
+  {
+   "type": "planner.note",
+   "level": "warn",
+   "worker_id": null,
+   "task_id": null,
+   "message": "No LLM_API_KEY configured: using deterministic rule-based planner.",
+   "created_at": 1793784802738,
+   "explorer": null
+  },
+  {
+   "type": "workflow.approval_required",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Plan validated (acyclic, capabilities allowlisted, within budget). Awaiting operator approval.",
+   "created_at": 1793784802738,
+   "explorer": null
+  },
+  {
+   "type": "workflow.approved",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Operator approved plan and budget",
+   "created_at": 1793784802851,
+   "explorer": null
+  },
+  {
+   "type": "fault.armed",
+   "level": "warn",
+   "worker_id": null,
+   "task_id": "research",
+   "message": "Failure injection armed: Worker A will crash after its next checkpoint on \"Gather Monad ecosystem evidence\"",
+   "created_at": 1793784802883,
+   "explorer": null
+  },
+  {
+   "type": "escrow.starting",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Creating on-chain task commitment and funding escrow on Monad testnet",
+   "created_at": 1793784803175,
+   "explorer": null
+  },
+  {
+   "type": "escrow.submitted",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.createTask broadcast",
+   "created_at": 1793784807004,
+   "explorer": "https://testnet.monadvision.com/tx/0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348"
+  },
+  {
+   "type": "escrow.confirmed",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.createTask confirmed in block 76881320",
+   "created_at": 1793784808998,
+   "explorer": "https://testnet.monadvision.com/tx/0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348"
+  },
+  {
+   "type": "escrow.submitted",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.fundTask broadcast",
+   "created_at": 1793784809714,
+   "explorer": "https://testnet.monadvision.com/tx/0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72"
+  },
+  {
+   "type": "escrow.confirmed",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.fundTask confirmed in block 76881328",
+   "created_at": 1793784811239,
+   "explorer": "https://testnet.monadvision.com/tx/0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72"
+  },
+  {
+   "type": "workflow.active",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Workflow active; scheduler releasing tasks",
+   "created_at": 1793784811240,
+   "explorer": null
+  },
+  {
+   "type": "task.ready",
+   "level": "info",
+   "worker_id": null,
+   "task_id": "research",
+   "message": "\"Gather Monad ecosystem evidence\" is ready (dependencies satisfied)",
+   "created_at": 1793784812253,
+   "explorer": null
+  },
+  {
+   "type": "task.claimed",
+   "level": "info",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Worker A \u00b7 Research claimed task (attempt #1)",
+   "created_at": 1793784812942,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Requesting paid Monad ecosystem dataset (x402)",
+   "created_at": 1793784814449,
+   "explorer": null
+  },
+  {
+   "type": "payment.required",
+   "level": "info",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "HTTP 402 from Synapse Monad Data Service (x402): 1 payment option(s)",
+   "created_at": 1793784814537,
+   "explorer": null
+  },
+  {
+   "type": "payment.reserved",
+   "level": "info",
+   "worker_id": null,
+   "task_id": "research",
+   "message": "Policy approved and reserved 0.01 USDC",
+   "created_at": 1793784814538,
+   "explorer": null
+  },
+  {
+   "type": "payment.submitted",
+   "level": "info",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Signed EIP-3009 authorization for 0.01 USDC; sending to provider",
+   "created_at": 1793784814951,
+   "explorer": null
+  },
+  {
+   "type": "payment.confirmed",
+   "level": "success",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "x402 payment settled on Monad testnet and verified (USDC Transfer log matched)",
+   "created_at": 1793784821303,
+   "explorer": "https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7"
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Checkpoint seq 1 saved after \"purchase_dataset\"",
+   "created_at": 1793784821306,
+   "explorer": null
+  },
+  {
+   "type": "worker.crash",
+   "level": "error",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Injected failure: Worker A \u00b7 Research process is terminating mid-task",
+   "created_at": 1793784821307,
+   "explorer": null
+  },
+  {
+   "type": "lease.expired",
+   "level": "error",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Heartbeat lost from worker-a; lease expired",
+   "created_at": 1793784829395,
+   "explorer": null
+  },
+  {
+   "type": "task.attempt_failed",
+   "level": "warn",
+   "worker_id": "worker-a",
+   "task_id": "research",
+   "message": "Attempt failed (lease expired (worker heartbeat lost)); task \u2192 RECOVERING (checkpoint seq 1 available)",
+   "created_at": 1793784829412,
+   "explorer": null
+  },
+  {
+   "type": "task.recovery_claimed",
+   "level": "warn",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Worker B \u00b7 Analysis claimed recovery attempt #2 from checkpoint seq 1",
+   "created_at": 1793784830368,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.loaded",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Loaded checkpoint seq 1: steps done = [purchase_dataset]",
+   "created_at": 1793784830369,
+   "explorer": null
+  },
+  {
+   "type": "worker.resume",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Resuming research; skipping 1 completed step(s): purchase_dataset",
+   "created_at": 1793784830370,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Agent requests premium deep-dive (priced above per-call cap) \u2014 policy check",
+   "created_at": 1793784831877,
+   "explorer": null
+  },
+  {
+   "type": "payment.required",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "HTTP 402 from Synapse Monad Data Service (x402): 1 payment option(s)",
+   "created_at": 1793784831995,
+   "explorer": null
+  },
+  {
+   "type": "payment.rejected",
+   "level": "warn",
+   "worker_id": null,
+   "task_id": "research",
+   "message": "Policy rejected x402 purchase: amount 250000 exceeds per-call cap 20000",
+   "created_at": 1793784831997,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Checkpoint seq 2 saved after \"policy_probe_premium\"",
+   "created_at": 1793784831998,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Fetching allowlisted source https://docs.monad.xyz/llms.txt",
+   "created_at": 1793784833503,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Checkpoint seq 3 saved after \"monad_docs\"",
+   "created_at": 1793784834834,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Fetching allowlisted source https://api.github.com/orgs/monad-developers/repos?sort=pushed&per_page=30",
+   "created_at": 1793784836346,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Checkpoint seq 4 saved after \"github_activity\"",
+   "created_at": 1793784838954,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Probing live Monad testnet RPC (chain id, head block, gas price, block cadence)",
+   "created_at": 1793784840463,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Checkpoint seq 5 saved after \"network_probe\"",
+   "created_at": 1793784841264,
+   "explorer": null
+  },
+  {
+   "type": "worker.step",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Extracted 18 cited facts",
+   "created_at": 1793784842769,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Checkpoint seq 6 saved after \"extract_facts\"",
+   "created_at": 1793784842771,
+   "explorer": null
+  },
+  {
+   "type": "task.verification",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Verification passed: 8/8 checks",
+   "created_at": 1793784842773,
+   "explorer": null
+  },
+  {
+   "type": "task.completed",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "research",
+   "message": "Task completed and verified (artifact 0xa7855d5454af4c57\u2026)",
+   "created_at": 1793784842773,
+   "explorer": null
+  },
+  {
+   "type": "task.ready",
+   "level": "info",
+   "worker_id": null,
+   "task_id": "analysis",
+   "message": "\"Analyze ecosystem signals\" is ready (dependencies satisfied)",
+   "created_at": 1793784843488,
+   "explorer": null
+  },
+  {
+   "type": "task.claimed",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "analysis",
+   "message": "Worker B \u00b7 Analysis claimed task (attempt #1)",
+   "created_at": 1793784844489,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "analysis",
+   "message": "Checkpoint seq 1 saved after \"analyze\"",
+   "created_at": 1793784846005,
+   "explorer": null
+  },
+  {
+   "type": "task.verification",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "analysis",
+   "message": "Verification passed: 7/7 checks",
+   "created_at": 1793784846007,
+   "explorer": null
+  },
+  {
+   "type": "task.completed",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "analysis",
+   "message": "Task completed and verified (artifact 0x1dc587b98a35a834\u2026)",
+   "created_at": 1793784846008,
+   "explorer": null
+  },
+  {
+   "type": "task.ready",
+   "level": "info",
+   "worker_id": null,
+   "task_id": "briefing",
+   "message": "\"Synthesize technical briefing\" is ready (dependencies satisfied)",
+   "created_at": 1793784846502,
+   "explorer": null
+  },
+  {
+   "type": "task.claimed",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "briefing",
+   "message": "Worker B \u00b7 Analysis claimed task (attempt #1)",
+   "created_at": 1793784847519,
+   "explorer": null
+  },
+  {
+   "type": "checkpoint.saved",
+   "level": "info",
+   "worker_id": "worker-b",
+   "task_id": "briefing",
+   "message": "Checkpoint seq 1 saved after \"render\"",
+   "created_at": 1793784849040,
+   "explorer": null
+  },
+  {
+   "type": "task.verification",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "briefing",
+   "message": "Verification passed: 9/9 checks",
+   "created_at": 1793784849043,
+   "explorer": null
+  },
+  {
+   "type": "task.completed",
+   "level": "success",
+   "worker_id": "worker-b",
+   "task_id": "briefing",
+   "message": "Task completed and verified (artifact 0x9a431f2c75d43bdf\u2026)",
+   "created_at": 1793784849044,
+   "explorer": null
+  },
+  {
+   "type": "escrow.submitted",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.submitResult (Worker B) broadcast",
+   "created_at": 1793784854132,
+   "explorer": "https://testnet.monadvision.com/tx/0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3"
+  },
+  {
+   "type": "escrow.confirmed",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.submitResult (Worker B) confirmed in block 76881475",
+   "created_at": 1793784855253,
+   "explorer": "https://testnet.monadvision.com/tx/0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3"
+  },
+  {
+   "type": "escrow.submitted",
+   "level": "info",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.acceptResult (settlement) broadcast",
+   "created_at": 1793784856501,
+   "explorer": "https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2"
+  },
+  {
+   "type": "escrow.confirmed",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "TaskEscrow.acceptResult (settlement) confirmed in block 76881480",
+   "created_at": 1793784858523,
+   "explorer": "https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2"
+  },
+  {
+   "type": "escrow.settled",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "Escrow settled on Monad and verified (event + state)",
+   "created_at": 1793784859572,
+   "explorer": null
+  },
+  {
+   "type": "workflow.completed",
+   "level": "success",
+   "worker_id": null,
+   "task_id": null,
+   "message": "All tasks completed and verified; final briefing available",
+   "created_at": 1793784859573,
+   "explorer": null
+  }
+ ],
+ "payments": [
+  {
+   "network": "eip155:10143",
+   "asset": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+   "pay_to": "0x6cCC8A2fB675ecf7b4324e334773b95843818787",
+   "payer": "0x33D32B469efDcC765f1CfE84737A337e814faCf2",
+   "amount_base": "10000",
+   "status": "CONFIRMED",
+   "status_reason": null,
+   "tx_hash": "0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7",
+   "onchain": {
+    "verified": true,
+    "blockNumber": "76881361",
+    "transfer": {
+     "from": "0x33D32B469efDcC765f1CfE84737A337e814faCf2",
+     "to": "0x6cCC8A2fB675ecf7b4324e334773b95843818787",
+     "value": "10000",
+     "logIndex": 37
+    },
+    "authorizationUsed": true
+   },
+   "resource": "/v1/monad/ecosystem",
+   "explorer": "https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7"
+  },
+  {
+   "network": "eip155:10143",
+   "asset": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+   "pay_to": "0x6cCC8A2fB675ecf7b4324e334773b95843818787",
+   "payer": null,
+   "amount_base": "250000",
+   "status": "REJECTED",
+   "status_reason": "amount 250000 exceeds per-call cap 20000",
+   "tx_hash": null,
+   "onchain": null,
+   "resource": "/v1/monad/deep-dive",
+   "explorer": null
+  }
+ ],
+ "escrow": [
+  {
+   "action": "CREATE",
+   "status": "CONFIRMED",
+   "tx_hash": "0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348",
+   "block_number": 76881320,
+   "amount_wei": null,
+   "verification": null,
+   "explorer": "https://testnet.monadvision.com/tx/0xd30522e998a34ed66b190d0f8600f3a6a1f03d423508d8556bfe9b581c26f348"
+  },
+  {
+   "action": "FUND",
+   "status": "CONFIRMED",
+   "tx_hash": "0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72",
+   "block_number": 76881328,
+   "amount_wei": "10000000000000000",
+   "verification": null,
+   "explorer": "https://testnet.monadvision.com/tx/0xd4e513b563a79778a000b034aac9f8cc7a6bec09cf4b50cb92ca98ac2a7d6d72"
+  },
+  {
+   "action": "SUBMIT",
+   "status": "CONFIRMED",
+   "tx_hash": "0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3",
+   "block_number": 76881475,
+   "amount_wei": null,
+   "verification": null,
+   "explorer": "https://testnet.monadvision.com/tx/0x1f32f2c11b5d2c8a6239a7dc039ba571e6ba7f5c85725256e554dfb2e990f7a3"
+  },
+  {
+   "action": "ACCEPT",
+   "status": "CONFIRMED",
+   "tx_hash": "0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2",
+   "block_number": 76881480,
+   "amount_wei": null,
+   "verification": {
+    "receiptStatus": "success",
+    "eventFound": true,
+    "eventAmountWei": "10000000000000000",
+    "eventResultHash": "0x9a431f2c75d43bdf30755f29edc27b89f53576b9c5326ebd11a75251b70c86ed",
+    "resultHashMatches": true,
+    "onchainState": "Settled",
+    "payee": "0xFbb2dcb07A6513956E6ffd90Fb510627E09d9dA4",
+    "payeeBalanceBeforeWei": "45647648000000000",
+    "payeeBalanceAtSettleBlockWei": "55647648000000000"
+   },
+   "explorer": "https://testnet.monadvision.com/tx/0xaff7bd15a6b72c624c1959c41f49b4839b198034adb8b6aa06f3343ff28971b2"
+  }
+ ],
+ "verifications": [
+  {
+   "taskId": "research",
+   "passed": true,
+   "checks": [
+    {
+     "id": "deps",
+     "label": "All dependencies completed",
+     "passed": true
+    },
+    {
+     "id": "artifact",
+     "label": "Output artifact stored",
+     "passed": true
+    },
+    {
+     "id": "hash",
+     "label": "Artifact hash matches persisted content",
+     "passed": true
+    },
+    {
+     "id": "payments",
+     "label": "No unresolved payment operations",
+     "passed": true
+    },
+    {
+     "id": "sources",
+     "label": "\u22653 sources with valid URLs",
+     "passed": true,
+     "detail": "7 sources"
+    },
+    {
+     "id": "facts",
+     "label": "\u22653 extracted facts",
+     "passed": true,
+     "detail": "18 facts"
+    },
+    {
+     "id": "citations",
+     "label": "Every fact references a known source",
+     "passed": true
+    },
+    {
+     "id": "dataset",
+     "label": "Paid dataset receipt recorded or purchase explicitly blocked",
+     "passed": true,
+     "detail": "PAID"
+    }
+   ],
+   "verifiedAt": 1793784842773
+  },
+  {
+   "taskId": "analysis",
+   "passed": true,
+   "checks": [
+    {
+     "id": "deps",
+     "label": "All dependencies completed",
+     "passed": true
+    },
+    {
+     "id": "artifact",
+     "label": "Output artifact stored",
+     "passed": true
+    },
+    {
+     "id": "hash",
+     "label": "Artifact hash matches persisted content",
+     "passed": true
+    },
+    {
+     "id": "payments",
+     "label": "No unresolved payment operations",
+     "passed": true
+    },
+    {
+     "id": "insights",
+     "label": "\u22653 insights",
+     "passed": true,
+     "detail": "7"
+    },
+    {
+     "id": "evidence",
+     "label": "Every insight cites research facts",
+     "passed": true
+    },
+    {
+     "id": "risks",
+     "label": "Risks section present",
+     "passed": true
+    }
+   ],
+   "verifiedAt": 1793784846007
+  },
+  {
+   "taskId": "briefing",
+   "passed": true,
+   "checks": [
+    {
+     "id": "deps",
+     "label": "All dependencies completed",
+     "passed": true
+    },
+    {
+     "id": "artifact",
+     "label": "Output artifact stored",
+     "passed": true
+    },
+    {
+     "id": "hash",
+     "label": "Artifact hash matches persisted content",
+     "passed": true
+    },
+    {
+     "id": "payments",
+     "label": "No unresolved payment operations",
+     "passed": true
+    },
+    {
+     "id": "section:Executive Summary",
+     "label": "Report has \"Executive Summary\" section",
+     "passed": true
+    },
+    {
+     "id": "section:Recommendations",
+     "label": "Report has \"Recommendations\" section",
+     "passed": true
+    },
+    {
+     "id": "section:Sources",
+     "label": "Report has \"Sources\" section",
+     "passed": true
+    },
+    {
+     "id": "links",
+     "label": "\u22653 source links in report",
+     "passed": true,
+     "detail": "16 links"
+    },
+    {
+     "id": "length",
+     "label": "Report has substantive content (\u2265 1500 chars)",
+     "passed": true,
+     "detail": "9235 chars"
+    }
+   ],
+   "verifiedAt": 1793784849043
+  }
+ ],
+ "report": {
+  "sha256": "0x9a431f2c75d43bdf30755f29edc27b89f53576b9c5326ebd11a75251b70c86ed",
+  "markdown": "# Monad Ecosystem \u2014 Technical Briefing\n\n> Goal: Research the Monad ecosystem and generate an actionable technical briefing.\n> Workflow `wf_a4198e6b7d13412b` \u00b7 generated 2026-11-04T09:34:09.037Z \u00b7 analysis method: `deterministic-rules`\n\n## Executive Summary\n\n**Monad already carries meaningful DeFi liquidity.** On-chain capital is present (Monad mainnet (chainId 143) DeFi TVL is about $910.1M). **TVL contracted over the last 30 days.** Monad TVL changed -12.3% over the last 30 days (2026-10-06 \u2192 2026-11-04). **Liquidity is spread across several protocols.** Top 3 protocols account for 40% of the top-15 protocol TVL on Monad.\n\nThis briefing is built from 7 sources and 18 extracted facts. Every insight below links to the facts it relies on; claims marked _derived_ are Synapse interpretations, not source statements.\n\n## Key Metrics\n\n| # | Fact | Source |\n|---|------|--------|\n| F1 | Monad mainnet (chainId 143) DeFi TVL is about $910.1M | [defillama-chains](https://api.llama.fi/v2/chains) |\n| F2 | Monad ranks #10 among chains by DeFi TVL | [defillama-chains](https://api.llama.fi/v2/chains) |\n| F3 | Monad TVL changed -12.3% over the last 30 days (2026-10-06 \u2192 2026-11-04) | [defillama-monad-history](https://api.llama.fi/v2/historicalChainTvl/Monad) |\n| F4 | 158 protocols list Monad deployments on DefiLlama | [defillama-protocols](https://api.llama.fi/protocols) |\n| F5 | Aave V3 (Lending) holds ~$280.8M TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F6 | Euler V2 (Lending) holds ~$200.7M TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F7 | Hyperithm (Risk Curators) holds ~$176.9M TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F8 | K3 Capital (Risk Curators) holds ~$176.5M TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F9 | Morpho Blue (Lending) holds ~$165.9M TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F10 | Top 3 protocols account for 40% of the top-15 protocol TVL on Monad | [defillama-protocols](https://api.llama.fi/protocols) |\n| F11 | Most common Monad protocol categories: Dexs (49), Risk Curators (19), Lending (13), Yield (9) | [defillama-protocols](https://api.llama.fi/protocols) |\n| F12 | Monad docs index lists 200 pages | [monad-docs](https://docs.monad.xyz/llms.txt) |\n| F13 | Docs cover developer topics including: parallel, MonadBFT, async, gas, RPC, staking, x402 | [monad-docs](https://docs.monad.xyz/llms.txt) |\n| F14 | 8 of 30 sampled monad-developers repos were pushed in the last 30 days | [github-monad-developers](https://github.com/monad-developers) |\n| F15 | Most-starred monad-developers repos: ultrafuzz (133\u2605), validator-info (32\u2605), staking-sdk-cli (15\u2605) | [github-monad-developers](https://github.com/monad-developers) |\n| F16 | Monad testnet (chainId 10143) head block 76881429 observed live | [monad-testnet-rpc](https://testnet-rpc.monad.xyz) |\n| F17 | Observed average block time \u2248 300 ms over the last 20 testnet blocks (1 s timestamp resolution) | [monad-testnet-rpc](https://testnet-rpc.monad.xyz) |\n| F18 | Testnet gas price \u2248 102.00 gwei at probe time | [monad-testnet-rpc](https://testnet-rpc.monad.xyz) |\n\n### Top protocols by Monad TVL\n\n| Protocol | Category | Monad TVL |\n|---|---|---|\n| [Aave V3](https://aave.com) | Lending | $280.8M |\n| [Euler V2](https://www.euler.finance) | Lending | $200.7M |\n| [Hyperithm](https://www.hyperithm.com) | Risk Curators | $176.9M |\n| [K3 Capital](https://k3.capital) | Risk Curators | $176.5M |\n| [Morpho Blue](https://app.morpho.org) | Lending | $165.9M |\n| [Pendle V2](https://pendle.finance/) | Yield | $150.8M |\n| [Curvance](https://app.curvance.com) | Lending | $132.6M |\n| [Valos](https://valos.io/) | RWA | $106.1M |\n\n## Insights\n\n### I1. Monad already carries meaningful DeFi liquidity\n_trend \u00b7 sourced_ \u2014 evidence: F1, F2 ([defillama-chains](https://api.llama.fi/v2/chains))\n\nOn-chain capital is present (Monad mainnet (chainId 143) DeFi TVL is about $910.1M). Builders can target existing liquidity rather than bootstrapping from zero.\n\n### I2. TVL contracted over the last 30 days\n_trend \u00b7 derived_ \u2014 evidence: F3 ([defillama-monad-history](https://api.llama.fi/v2/historicalChainTvl/Monad))\n\nMonad TVL changed -12.3% over the last 30 days (2026-10-06 \u2192 2026-11-04). Contraction argues for capital-efficient designs and incentive caution.\n\n### I3. Liquidity is spread across several protocols\n_opportunity \u00b7 derived_ \u2014 evidence: F10, F5, F6, F7 ([defillama-protocols](https://api.llama.fi/protocols))\n\nTop 3 protocols account for 40% of the top-15 protocol TVL on Monad. Room exists for new entrants in under-served categories.\n\n### I4. Category gaps suggest where to build\n_opportunity \u00b7 derived_ \u2014 evidence: F11 ([defillama-protocols](https://api.llama.fi/protocols))\n\nMost common Monad protocol categories: Dexs (49), Risk Curators (19), Lending (13), Yield (9). Categories absent from this list (e.g. agent payments, data oracles, infra tooling) are candidate white space \u2014 validate with user interviews.\n\n### I5. Fast blocks enable interactive, high-frequency agent settlement\n_developer \u00b7 sourced_ \u2014 evidence: F16, F17, F18 ([monad-testnet-rpc](https://testnet-rpc.monad.xyz))\n\nLive probe: Monad testnet (chainId 10143) head block 76881429 observed live; Observed average block time \u2248 300 ms over the last 20 testnet blocks (1 s timestamp resolution); Testnet gas price \u2248 102.00 gwei at probe time. Sub-second-to-second confirmation makes per-task escrow and micro-payments practical for agent workflows.\n\n### I6. Active first-party developer tooling\n_developer \u00b7 sourced_ \u2014 evidence: F14, F15 ([github-monad-developers](https://github.com/monad-developers))\n\n8 of 30 sampled monad-developers repos were pushed in the last 30 days; Most-starred monad-developers repos: ultrafuzz (133\u2605), validator-info (32\u2605), staking-sdk-cli (15\u2605). Track these repos for SDK and infra changes that affect integrations.\n\n### I7. Documentation surface is broad\n_developer \u00b7 sourced_ \u2014 evidence: F12, F13 ([monad-docs](https://docs.monad.xyz/llms.txt))\n\nMonad docs index lists 200 pages; Docs cover developer topics including: parallel, MonadBFT, async, gas, RPC, staking, x402. EVM-compatibility notes and performance docs are the first stop for porting existing contracts.\n\n## Recommendations\n\n1. **Monitor:** Monad already carries meaningful DeFi liquidity \u2014 re-run this workflow weekly to track the trend (F1, F2).\n2. **Monitor:** TVL contracted over the last 30 days \u2014 re-run this workflow weekly to track the trend (F3).\n3. **Pursue:** Liquidity is spread across several protocols \u2014 validate demand before committing capital (F10, F5, F6, F7).\n4. **Pursue:** Category gaps suggest where to build \u2014 validate demand before committing capital (F11).\n5. **Build on the developer surface:** fast blocks enable interactive, high-frequency agent settlement \u2014 prioritise integrations that exploit this (F16, F17, F18).\n6. **Settle agent work on-chain:** use per-task escrow (as this workflow did) for outcome-dependent payouts, and x402 for metered data purchases with hard per-call caps.\n\n## Risks & Caveats\n\n- Negative 30-day TVL trend (-12.33%) \u2014 liquidity may be incentive-driven.\n- TVL figures are third-party (DefiLlama) aggregates and are not independently audited by Synapse.\n- Testnet performance observations do not guarantee mainnet behaviour under load.\n\n## Unverified / Derived Claims\n\n- I2 \"TVL contracted over the last 30 days\" is an interpretation of F3; it is not stated by any source.\n- I3 \"Liquidity is spread across several protocols\" is an interpretation of F10, F5, F6, F7; it is not stated by any source.\n- I4 \"Category gaps suggest where to build\" is an interpretation of F11; it is not stated by any source.\n- Synapse verified structure, citations and hashes deterministically; it did not independently audit third-party metrics.\n\n## Data Provenance\n\n- Paid dataset: **PAID** \u2014 x402 settlement tx `0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7` ([explorer](https://testnet.monadvision.com/tx/0x47bd1a4f8ba3e42121652a0d6dcc5f766ecf4bba8fe16014eba25258e28685a7))\n- Premium deep-dive request: **REJECTED** \u2014 amount 250000 exceeds per-call cap 20000\n\n## Sources\n\n- **x402-dataset** \u2014 [Synapse Monad Data Service (paid via x402, PAID)](http://localhost:4021/v1/monad/ecosystem) (paid-dataset, retrieved 2026-11-04T09:33:39.603Z)\n- **defillama-chains** \u2014 [DefiLlama chains TVL](https://api.llama.fi/v2/chains) (api, retrieved 2026-11-04T09:33:39.603Z)\n- **defillama-monad-history** \u2014 [DefiLlama Monad TVL history](https://api.llama.fi/v2/historicalChainTvl/Monad) (api, retrieved 2026-11-04T09:33:39.603Z)\n- **defillama-protocols** \u2014 [DefiLlama protocol registry](https://api.llama.fi/protocols) (api, retrieved 2026-11-04T09:33:39.603Z)\n- **monad-docs** \u2014 [Monad Documentation (llms.txt index)](https://docs.monad.xyz/llms.txt) (docs, retrieved 2026-11-04T09:33:54.824Z)\n- **github-monad-developers** \u2014 [GitHub: monad-developers organization](https://github.com/monad-developers) (github, retrieved 2026-11-04T09:33:58.951Z)\n- **monad-testnet-rpc** \u2014 [Monad testnet JSON-RPC (live probe)](https://testnet-rpc.monad.xyz) (api, retrieved 2026-11-04T09:34:01.261Z)\n"
+ }
+}

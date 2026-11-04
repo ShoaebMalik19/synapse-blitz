@@ -14,15 +14,18 @@ function TaskNode({ data }: NodeProps<Node<TaskNodeData>>) {
   return (
     <div
       className={cx(
-        "w-[230px] rounded-[4px] border-2 bg-surface px-3 py-2.5 text-left shadow-[var(--shadow)] transition-colors",
+        "w-[230px] rounded-[4px] border-2 bg-surface px-3 py-2.5 text-left shadow-[var(--shadow)] transition-colors duration-300",
         active ? "border-blue" : t.status === "RECOVERING" ? "border-warn" : t.status === "COMPLETED" ? "border-ok/60" : t.status === "FAILED" ? "border-bad" : "border-line-strong",
         data.selected && "ring-2 ring-accent ring-offset-2 ring-offset-bg",
+        active && "anim-node-active",
       )}
     >
       <Handle type="target" position={Position.Left} className="!size-2 !border-0 !bg-[var(--fg-dim)]" />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-wider text-dim">{t.capability}</span>
-        <StatusBadge s={t.status} />
+        <span key={t.status} className="anim-flash rounded-[3px]">
+          <StatusBadge s={t.status} />
+        </span>
       </div>
       <div className="mt-1.5 truncate text-[13px] font-medium text-fg">{t.title}</div>
       <div className="mt-1.5 flex items-center gap-1.5 font-mono text-[10.5px] text-muted">

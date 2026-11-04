@@ -47,9 +47,16 @@ const tone = {
 } as const;
 export type Tone = keyof typeof tone;
 
-export function Badge({ children, t = "muted", className }: { children: ReactNode; t?: Tone; className?: string }) {
+export function Badge({ children, t = "muted", className, wrap = false }: { children: ReactNode; t?: Tone; className?: string; wrap?: boolean }) {
   return (
-    <span className={cx("inline-flex items-center gap-1 whitespace-nowrap rounded-[3px] border px-1.5 py-0.5 font-mono text-[10.5px] font-medium uppercase tracking-wide", tone[t], className)}>
+    <span
+      className={cx(
+        "inline-flex items-center gap-1 rounded-[3px] border px-1.5 py-0.5 font-mono text-[10.5px] font-medium uppercase tracking-wide",
+        wrap ? "max-w-full whitespace-normal text-left [overflow-wrap:anywhere]" : "whitespace-nowrap",
+        tone[t],
+        className,
+      )}
+    >
       {children}
     </span>
   );

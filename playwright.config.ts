@@ -1,9 +1,22 @@
 import { defineConfig } from "@playwright/test";
 import "dotenv/config";
+import crypto from "node:crypto";
 
 const PORT = 3100;
-// E2E uses its own durable SQLite file so it never touches demo data.
-const env = { ...process.env, DATABASE_URL: "file:./data/e2e.db", WORKER_RESTART_MS: "15000", INSECURE_COOKIES: "1", PORT: String(PORT) } as Record<string, string>;
+// E2E is hermetic: its own SQLite file, and it can never spend or call paid APIs.
+// - OPERATOR_PRIVATE_KEY: a fresh random key with no funds (x402 is blocked before signing)
+// - MONAD_ESCROW_ADDRESS empty (escrow shown as BLOCKED)
+// - LLM_API_KEY empty (rule-based planner; no live LLM calls)
+const env = {
+  ...process.env,
+  DATABASE_URL: "file:./data/e2e.db",
+  WORKER_RESTART_MS: "15000",
+  INSECURE_COOKIES: "1",
+  PORT: String(PORT),
+  OPERATOR_PRIVATE_KEY: "0x" + crypto.randomBytes(32).toString("hex"),
+  MONAD_ESCROW_ADDRESS: "",
+  LLM_API_KEY: "",
+} as Record<string, string>;
 
 export default defineConfig({
   testDir: "tests/e2e",

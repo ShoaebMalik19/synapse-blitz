@@ -24,7 +24,7 @@ Full evidence and verification method: [PAYMENT_VERIFICATION.md](PAYMENT_VERIFIC
 Synapse turns a **goal + budget** into a verified multi-agent workflow. An AI planner proposes a task DAG, deterministic code validates it, **independent worker processes** execute the tasks, an agent **buys data over x402**, a **Monad `TaskEscrow` contract** commits and settles the deliverable, and when a worker dies mid-task another worker **resumes from a hashed checkpoint without paying twice**.
 
 ```
-goal + budget ─► planner (LLM or rule-based) ─► Zod + DAG validation ─► operator approval
+goal + budget ─► planner (Groq gpt-oss-20b, or rule-based fallback) ─► Zod + DAG validation ─► draft ─► operator approval
       ─► TaskEscrow.createTask + fundTask (Monad) ─► Worker A: x402 purchase → sources → checkpoints
       ─► 💥 crash ─► lease expiry ─► Worker B resumes from checkpoint ─► analysis ─► briefing
       ─► deterministic verification ─► submitResult(hash) → acceptResult(hash) (Monad) ─► report + evidence
@@ -54,6 +54,8 @@ Large outputs never go on-chain; only 32-byte commitments do. On-chain receipts 
 |---|---|---|
 | Goal + budget composer, separate USDC / MON limits, server ceilings | ✅ | UI + `budgets above server ceilings are rejected` E2E |
 | Planner → Zod-validated DAG (cycles, unknown deps, capabilities, budget, bounds) | ✅ | `tests/unit/planner.test.ts` |
+| **Generate plan with Groq** (`openai/gpt-oss-20b` via OpenAI-compatible API); provenance (provider, model, response id, tokens) saved per draft; rule-based fallback on 429/401/404/timeouts/invalid output; unsupported goals → HTTP 422 | ✅ live-verified: drafts `wf_c85cd9229ef38b20`, `wf_07664bfb445539fd` | `tests/unit/planner-llm.test.ts` |
+| Generating a draft has no side effects (no workers, payment signatures or escrow until **Approve & start**) | ✅ | `tests/unit/planner-llm.test.ts` |
 | Two distinct worker processes (Worker A research, Worker B analysis/synthesis + research backup) | ✅ | separate OS processes, heartbeats in registry |
 | Atomic claims, leases, heartbeats, fencing, timeouts, bounded retries | ✅ | `tests/unit/scheduler.test.ts` |
 | **Real crash failover**: Worker A process exits (code 137) after a checkpoint; Worker B resumes from it | ✅ | E2E + unit test asserts no side effect repeated |
@@ -91,7 +93,7 @@ Open http://localhost:3000 → **Launch Synapse** → sign in with `OPERATOR_ACC
 | `WORKER_A_PRIVATE_KEY`, `WORKER_B_PRIVATE_KEY` | worker payee identities (Worker B submits the result hash; operator tops it up with ≤0.01 MON gas) |
 | `X402_PAY_TO` | address that receives x402 payments for the data service |
 | `MONAD_ESCROW_ADDRESS` | written by `npm run deploy:escrow` |
-| `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | optional OpenAI-compatible LLM. Without it the **rule-based planner/analyst** is used and labeled in the UI |
+| `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | optional OpenAI-compatible LLM; verified with Groq (`https://api.groq.com/openai/v1`, `openai/gpt-oss-20b`). Without it, or if the provider fails, the **rule-based planner** is used and labeled "Rule-based fallback" with the reason |
 
 Funding (testnet only): MON from https://faucet.monad.xyz, USDC from https://faucet.circle.com (Monad Testnet). Then:
 

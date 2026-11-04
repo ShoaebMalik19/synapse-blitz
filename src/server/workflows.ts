@@ -127,7 +127,11 @@ export function listWorkflows(db: DB = getDb()) {
     .prepare(
       `SELECT w.id, w.goal, w.status, w.planner, w.settlement_status, w.created_at, w.updated_at,
         (SELECT COUNT(*) FROM workflow_tasks t WHERE t.workflow_id = w.id) AS task_count,
-        (SELECT COUNT(*) FROM workflow_tasks t WHERE t.workflow_id = w.id AND t.status='COMPLETED') AS completed_count
+        (SELECT COUNT(*) FROM workflow_tasks t WHERE t.workflow_id = w.id AND t.status='COMPLETED') AS completed_count,
+        (SELECT COUNT(*) FROM payment_operations p WHERE p.workflow_id = w.id AND p.status='CONFIRMED') AS confirmed_payments,
+        (SELECT COUNT(*) FROM task_attempts a WHERE a.workflow_id = w.id AND a.kind='RECOVERY' AND a.status='SUCCEEDED') AS recoveries,
+        (SELECT tx_hash FROM payment_operations p WHERE p.workflow_id = w.id AND p.status='CONFIRMED' LIMIT 1) AS x402_tx,
+        (SELECT tx_hash FROM escrow_operations e WHERE e.workflow_id = w.id AND e.action='ACCEPT' AND e.status='CONFIRMED') AS settle_tx
        FROM workflows w ORDER BY w.created_at DESC LIMIT 50`,
     )
     .all();
