@@ -43,7 +43,7 @@ Large outputs never go on-chain; only 32-byte commitments do. On-chain receipts 
 | x402 client: policy → EIP-3009 signature → facilitator settle → **Transfer log verified on-chain** | ⚠️ implemented; live settlement **pending wallet USDC** | see [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
 | EIP-3009 nonce reconciliation for unknown outcomes (never blind re-pay) | ✅ | `tests/unit/payments.test.ts` |
 | `TaskEscrow` contract | ✅ 21 Foundry tests | `contracts/test/TaskEscrow.t.sol` |
-| TaskEscrow deploy + create/fund/submit/accept with receipt + event + state verification | ⚠️ implemented; live deployment **pending wallet MON** | see [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
+| TaskEscrow deploy + create/fund/submit/accept with receipt + event + state verification | ✅ **live on Monad testnet** — [`0x097dc98f…9f10`](https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10), settlement [`0x5f631295…a9c`](https://testnet.monadvision.com/tx/0x5f631295b1deed583ad6c9478e2024a32bd18b2bdc6d1142f91e0293feaaba9c) | [PAYMENT_VERIFICATION.md](PAYMENT_VERIFICATION.md) |
 | Deterministic output verification (schema, citations, sections, links, hash, no unresolved payments) | ✅ | `tests/unit/security.test.ts` |
 | Live DAG, event timeline, recovery timeline, payment ledger, result page, Markdown download | ✅ | Playwright E2E (real Chrome, production build) |
 
@@ -85,7 +85,7 @@ npm run deploy:escrow   # deploys TaskEscrow, writes deployments/monad-testnet.j
 
 ```bash
 npm run test:contracts  # 21 Foundry tests
-npm test                # 36 Vitest unit/integration tests
+npm test                # 37 Vitest unit/integration tests
 npm run typecheck && npm run lint && npm run build
 npm run test:e2e        # Playwright (uses installed Chrome; boots the full stack on :3100)
 npm run smoke           # headless end-to-end run with a failure drill against running backend
@@ -105,7 +105,7 @@ See **[DEMO.md](DEMO.md)** (3-minute script). Architecture details: **[ARCHITECT
 
 ## Known limitations
 
-* **Live on-chain evidence is pending funding** of the dedicated testnet wallet — see PAYMENT_VERIFICATION.md for current status.
+* **x402 live settlement is pending testnet USDC** in the operator wallet (escrow settlement is live and verified) — see PAYMENT_VERIFICATION.md.
 * Single-operator auth model; prototype worker registry is a static allowlist (not a permissionless marketplace).
 * Workers share one SQLite database on one machine (separate processes, not separate hosts). Production would use Postgres + network workers.
 * Escrow covers the final deliverable (payee = Worker B); per-task escrow for every node is future work.

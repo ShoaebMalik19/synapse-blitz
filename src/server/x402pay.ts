@@ -147,6 +147,16 @@ export async function purchase(
   } catch (err) {
     return { status: "BLOCKED", reason: `paid service unreachable at ${provider.baseUrl}: ${(err as Error).message}` };
   }
+  if (first.status >= 500) {
+    // Provider-side transient error (e.g. facilitator not yet reachable). Nothing was signed; retry the probe once.
+    emit(args.workflowId, "payment.provider_error", `Paid service returned HTTP ${first.status}; retrying unpaid probe once`, { ...ctx, level: "warn" });
+    await new Promise((r) => setTimeout(r, 3000));
+    try {
+      first = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    } catch (err) {
+      return { status: "BLOCKED", reason: `paid service unreachable at ${provider.baseUrl}: ${(err as Error).message}` };
+    }
+  }
   if (first.status !== 402) {
     return { status: "FAILED", reason: `expected HTTP 402 from ${url}, got ${first.status}` };
   }

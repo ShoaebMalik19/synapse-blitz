@@ -116,9 +116,22 @@ export async function retrySettlement(id: string, db: DB = getDb()) {
   if (!funded) throw new Error("escrow was never funded");
   setSettlement(id, "SETTLING", null, db);
   const synth = getTasks(id, db).find((t) => t.capability === "synthesis")!;
-  const r = await submitAndSettle(id, synth.result_hash as Hex, db);
-  setSettlement(id, r.ok ? "SETTLED" : "FAILED", r.ok ? null : "settlement verification failed", db);
-  return r;
+  try {
+    const r = await submitAndSettle(id, synth.result_hash as Hex, db);
+    setSettlement(id, r.ok ? "SETTLED" : "FAILED", r.ok ? null : ("reason" in r && r.reason) || "settlement verification failed", db);
+    return r;
+  } catch (err) {
+    setSettlement(id, "FAILED", (err as Error).message.split("\n").slice(0, 2).join(" ").slice(0, 300), db);
+    throw err;
+  }
+}
+
+/** On orchestrator start, no settlement can be in flight in this process: orphaned SETTLING -> FAILED (retryable, reconciled). */
+export function recoverOrphanedSettlements(db: DB = getDb()) {
+  const r = db
+    .prepare(`UPDATE workflows SET settlement_status='FAILED', settlement_note='settlement interrupted by a process restart; retry reconciles any broadcast tx', updated_at=? WHERE status='COMPLETED' AND settlement_status='SETTLING'`)
+    .run(now());
+  return r.changes;
 }
 
 export async function reconcileUnknownPayments(db: DB = getDb()) {

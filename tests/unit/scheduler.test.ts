@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, setDbForTests, type DB } from "../../src/server/db";
-import { deriveStatus, expireLeases, promoteReady } from "../../src/server/orchestrator";
+import { deriveStatus, expireLeases, promoteReady, recoverOrphanedSettlements } from "../../src/server/orchestrator";
 import { claimTask, runClaimed, WorkerCrash, type TaskContext } from "../../src/server/runtime";
 import { getTask, getTasks, latestCheckpoint } from "../../src/server/tasks";
 import { armFailure } from "../../src/server/workflows";
@@ -156,5 +156,14 @@ describe("checkpoint integrity", () => {
     const spy = vi.fn();
     await expect(runClaimed("worker-b", rec, spy, db)).rejects.toThrow(/integrity/);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("settlement crash recovery", () => {
+  it("an interrupted SETTLING workflow becomes FAILED (retryable) on orchestrator restart", () => {
+    db.prepare(`UPDATE workflows SET status='COMPLETED', settlement_status='SETTLING' WHERE id=?`).run(wf);
+    expect(recoverOrphanedSettlements(db)).toBe(1);
+    const r = db.prepare(`SELECT settlement_status FROM workflows WHERE id=?`).get(wf) as { settlement_status: string };
+    expect(r.settlement_status).toBe("FAILED");
   });
 });

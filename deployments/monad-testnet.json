@@ -1,0 +1,16 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "contract": "TaskEscrow",
+  "address": "0x097dc98f0cfcb46d98569bac7f987c8e22359f10",
+  "deployTx": "0xfb76e03562258435e7d28b4436b92abdd6246450fe06f7d480cd57ae4f8cc7c2",
+  "blockNumber": "76873840",
+  "deployer": "0x33D32B469efDcC765f1CfE84737A337e814faCf2",
+  "gasUsed": "903220",
+  "codeSize": 3766,
+  "explorer": {
+    "contract": "https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10",
+    "tx": "https://testnet.monadvision.com/tx/0xfb76e03562258435e7d28b4436b92abdd6246450fe06f7d480cd57ae4f8cc7c2"
+  },
+  "deployedAt": "2026-11-04T08:55:04.513Z"
+}

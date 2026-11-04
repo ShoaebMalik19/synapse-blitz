@@ -11,7 +11,7 @@ export const TaskEscrowAbi = TaskEscrowArtifact.abi as unknown as import("viem")
 
 export const ESCROW_STATES = ["None", "Created", "Funded", "Submitted", "Settled", "Refunded", "Cancelled"] as const;
 
-export type EscrowAction = "GAS_TOPUP" | "CREATE" | "FUND" | "SUBMIT" | "ACCEPT" | "REFUND";
+export type EscrowAction = "GAS_TOPUP" | "GAS_TOPUP_2" | "GAS_TOPUP_3" | "CREATE" | "FUND" | "SUBMIT" | "ACCEPT" | "REFUND";
 
 export interface EscrowOp {
   id: string;
@@ -97,7 +97,20 @@ async function runOnce(
   );
   let hash: Hex;
   try {
-    hash = await send(w);
+    // Monad RPC is load-balanced; a node with a lagging state view can transiently reject a valid tx
+    // ("insufficient balance"). Re-sending is safe: the nonce is unchanged until inclusion, so at most
+    // one of these identical-nonce transactions can ever be included.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        hash = await send(w);
+        break;
+      } catch (e) {
+        const transient = /insufficient balance|invalid parameters/i.test((e as Error).message);
+        if (!transient || attempt >= 5) throw e;
+        emit(workflowId, "escrow.retrying", `${meta.label}: transient RPC rejection, retrying (${attempt}/4)`, { level: "warn", db });
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
   } catch (err) {
     const msg = (err as Error).message.split("\n")[0].slice(0, 300);
     upsertOp(workflowId, action, { status: "FAILED", status_reason: msg }, db);
@@ -226,22 +239,43 @@ export async function submitAndSettle(workflowId: string, resultHash: Hex, db: D
   }
   const pc = publicClient();
   const payee = privateKeyToAccount(workerB).address;
-  // Payee needs gas for submitResult; top up from the operator within the gas allowance.
-  const payeeBal = await pc.getBalance({ address: payee });
-  const minGas = 5n * 10n ** 15n; // 0.005 MON
-  if (payeeBal < minGas && getOp(workflowId, "GAS_TOPUP", db)?.status !== "CONFIRMED") {
-    const topup = 10n ** 16n; // 0.01 MON
-    const gasCap = BigInt(getBudget(workflowId, db).gasMonWei);
-    if (topup > gasCap) {
-      blockEscrow(workflowId, "SUBMIT", `payee gas top-up ${topup} wei exceeds gas allowance ${gasCap} wei`, db);
-      return { ok: false as const, reason: "gas allowance too small" };
-    }
-    await runOnce(workflowId, "GAS_TOPUP", operator, (w) => w.sendTransaction({ to: payee, value: topup }), {
-      amountWei: topup,
-      label: "Gas top-up operator → Worker B",
-    }, db);
-  }
   const id = onchainTaskId(workflowId);
+  // Payee needs gas for submitResult. Size the top-up from the live estimate × maxFeePerGas with a
+  // 3x margin (the node rejects txs whose gasLimit × maxFee reservation is too close to the balance),
+  // bounded by the workflow's gas allowance across all top-ups.
+  const submitOp = getOp(workflowId, "SUBMIT", db);
+  // Only fund gas when we are actually about to sign a NEW submit (not when one is broadcast or confirmed).
+  if (!(submitOp && (submitOp.status === "CONFIRMED" || (submitOp.status === "SUBMITTED" && submitOp.tx_hash)))) {
+    const gas = await pc
+      .estimateContractGas({ address: addr, abi: TaskEscrowAbi, functionName: "submitResult", args: [id, resultHash], account: payee })
+      .catch(() => 100_000n);
+    const fees = await pc.estimateFeesPerGas();
+    const need = gas * (fees.maxFeePerGas ?? (await pc.getGasPrice())) * 3n;
+    const payeeBal = await pc.getBalance({ address: payee });
+    if (payeeBal < need) {
+      const gasCap = BigInt(getBudget(workflowId, db).gasMonWei);
+      const spent = escrowOps(workflowId, db)
+        .filter((o) => o.action.startsWith("GAS_TOPUP") && o.status === "CONFIRMED")
+        .reduce((s, o) => s + BigInt(o.amount_wei ?? "0"), 0n);
+      const topup = need - payeeBal;
+      if (spent + topup > gasCap) {
+        const reason = `payee gas top-up ${topup} wei would exceed gas allowance (${spent} of ${gasCap} wei used)`;
+        blockEscrow(workflowId, "SUBMIT", reason, db);
+        return { ok: false as const, reason };
+      }
+      const slot = (["GAS_TOPUP", "GAS_TOPUP_2", "GAS_TOPUP_3"] as const).find((a) => getOp(workflowId, a, db)?.status !== "CONFIRMED");
+      if (!slot) {
+        blockEscrow(workflowId, "SUBMIT", "gas top-up attempts exhausted", db);
+        return { ok: false as const, reason: "gas top-up attempts exhausted" };
+      }
+      await runOnce(workflowId, slot, operator, (w) => w.sendTransaction({ to: payee, value: topup }), {
+        amountWei: topup,
+        label: `Gas top-up operator → Worker B (${topup} wei = 3× est. ${gas} gas × maxFee)`,
+      }, db);
+      // Wait until the RPC reflects the new balance before signing from the payee.
+      for (let i = 0; i < 20 && (await pc.getBalance({ address: payee })) < need; i++) await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   await runOnce(
     workflowId,
     "SUBMIT",

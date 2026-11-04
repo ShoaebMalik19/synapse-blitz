@@ -116,6 +116,22 @@ app.get("/v1/monad/deep-dive", async (_req, res) => {
   res.json({ note: "premium deep-dive", data: await buildDataset() });
 });
 
-app.listen(PORT, () => {
+// Warm up: load supported kinds from the facilitator (with retries) before accepting traffic, so a
+// transient facilitator connect timeout at boot doesn't turn the first paid request into a 500.
+async function warmUp() {
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    try {
+      await resourceServer.initialize();
+      console.log(`[paid-data] facilitator supported kinds loaded (attempt ${attempt})`);
+      return;
+    } catch (err) {
+      console.warn(`[paid-data] facilitator init attempt ${attempt} failed: ${(err as Error).message}`);
+      await new Promise((r) => setTimeout(r, 3000 * attempt));
+    }
+  }
+  console.error("[paid-data] facilitator unreachable after retries; paid routes will report errors until it recovers");
+}
+
+warmUp().then(() => app.listen(PORT, () => {
   console.log(`[paid-data] x402 service on :${PORT} network=${NETWORK} asset=${ASSET} payTo=${PAY_TO} facilitator=${FACILITATOR}`);
-});
+}));
