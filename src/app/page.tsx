@@ -44,7 +44,7 @@ export default function Home() {
       <header className="relative z-10 mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Logo />
         <div className="flex items-center gap-2">
-          <Link href="https://github.com/ShoaebMalik19/synapse" className="hidden rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg sm:inline">
+          <Link href="https://github.com/ShoaebMalik19/synapse-blitz" className="hidden rounded-md px-3 py-1.5 text-sm text-muted hover:text-fg sm:inline">
             GitHub
           </Link>
           <ButtonLink href="/dashboard" variant="outline" className="h-9">
