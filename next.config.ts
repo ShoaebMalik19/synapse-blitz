@@ -7,8 +7,16 @@ const nextConfig: NextConfig = {
   partialPrefetching: false,
   serverExternalPackages: ["better-sqlite3"],
   // Public, static, read-only replay of the recorded run (no API/DB dependency).
+  // On serverless hosting (Vercel) every instance has its own /tmp, so a SQLite file can't be shared.
+  // When API_ORIGIN is set, all /api/* calls go to the persistent Synapse backend (orchestrator,
+  // workers and database) instead. Unset locally, so the app serves its own API.
   async rewrites() {
-    return [{ source: "/replay", destination: "/replay/index.html" }];
+    const origin = process.env.API_ORIGIN?.replace(/\/$/, "");
+    return {
+      beforeFiles: origin ? [{ source: "/api/:path*", destination: `${origin}/api/:path*` }] : [],
+      afterFiles: [{ source: "/replay", destination: "/replay/index.html" }],
+      fallback: [],
+    };
   },
   turbopack: {
     rules: {
