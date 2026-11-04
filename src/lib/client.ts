@@ -189,7 +189,7 @@ export interface PaymentsResponse {
  * Human label for an x402 payment op. Makes it impossible to read a blocked/rejected purchase as paid:
  * only CONFIRMED (Transfer log verified on-chain) is shown as "PAID".
  */
-export function paymentLabel(p: { status: string; status_reason: string | null }): { label: string; charged: boolean; tone: "ok" | "warn" | "bad" | "violet" } {
+export function paymentLabel(p: { status: string; status_reason: string | null }): { label: string; charged: boolean; tone: "ok" | "warn" | "bad" | "blue" } {
   switch (p.status) {
     case "CONFIRMED":
       return { label: "PAID · VERIFIED ON-CHAIN", charged: true, tone: "ok" };
@@ -202,7 +202,7 @@ export function paymentLabel(p: { status: string; status_reason: string | null }
     case "UNKNOWN":
       return { label: "UNKNOWN · RECONCILING", charged: false, tone: "warn" };
     default:
-      return { label: `${p.status} · PENDING`, charged: false, tone: "violet" };
+      return { label: `${p.status} · PENDING`, charged: false, tone: "blue" };
   }
 }
 

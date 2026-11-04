@@ -1,21 +1,58 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   SYNAPSE — "flight recorder" design system
+   Light chart-paper by default (reads well on projectors), night-cockpit dark.
+   International orange is the flight-recorder color: used sparingly for the
+   primary action, incidents (crash) and the recorder mark. Never for body text.
+   ========================================================================== */
+
 :root {
-  --bg: #07070b;
-  --bg-elev: #0c0c13;
-  --surface: #11111a;
-  --surface-2: #161622;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --fg: #ececf3;
-  --fg-muted: #9a9ab0;
-  --fg-dim: #66667a;
-  --violet: #8b5cf6;
-  --violet-soft: rgba(139, 92, 246, 0.14);
-  --blue: #5b8cff;
-  --green: #34d399;
-  --amber: #fbbf24;
-  --red: #f87171;
+  --bg: #edefea; /* chart paper */
+  --bg-elev: #f2f4ef;
+  --surface: #f7f8f5;
+  --surface-2: #e3e6e0;
+  --field: #ffffff;
+  --border: rgba(17, 21, 19, 0.11);
+  --border-strong: rgba(17, 21, 19, 0.22);
+  --fg: #111513; /* ink */
+  --fg-muted: #454d48;
+  --fg-dim: #646c67;
+  --accent: #ff4f00; /* international orange — fills only */
+  --on-accent: #111513;
+  --accent-ink: #b23800; /* orange that passes AA as text */
+  --blue: #1f57b8; /* live / Worker A / x402 */
+  --wb: #7b3fa0; /* Worker B */
+  --green: #1c7342;
+  --amber: #8f5a00;
+  --red: #b8261b;
+  --grid: rgba(17, 21, 19, 0.06);
+  --grid-major: rgba(17, 21, 19, 0.1);
+  --shadow: 0 1px 0 rgba(17, 21, 19, 0.04), 0 8px 24px -16px rgba(17, 21, 19, 0.25);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1211;
+  --bg-elev: #131715;
+  --surface: #171b19;
+  --surface-2: #1e2320;
+  --field: #0c0f0e;
+  --border: rgba(228, 232, 227, 0.09);
+  --border-strong: rgba(228, 232, 227, 0.17);
+  --fg: #e4e8e3;
+  --fg-muted: #a3aca6;
+  --fg-dim: #7e8781;
+  --accent: #ff5a1a;
+  --on-accent: #111513;
+  --accent-ink: #ff8a55;
+  --blue: #6ea2ff;
+  --wb: #c49be6;
+  --green: #4cc387;
+  --amber: #e8b04a;
+  --red: #ff6b5e;
+  --grid: rgba(228, 232, 227, 0.04);
+  --grid-major: rgba(228, 232, 227, 0.08);
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
 }
 
 @theme inline {
@@ -23,84 +60,142 @@
   --color-elev: var(--bg-elev);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-field: var(--field);
   --color-line: var(--border);
   --color-line-strong: var(--border-strong);
   --color-fg: var(--fg);
   --color-muted: var(--fg-muted);
   --color-dim: var(--fg-dim);
-  --color-violet: var(--violet);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-ink: var(--accent-ink);
   --color-blue: var(--blue);
+  --color-wb: var(--wb);
   --color-ok: var(--green);
   --color-warn: var(--amber);
   --color-bad: var(--red);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 html {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
   color-scheme: dark;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv11";
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.35);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.grid-bg {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.glow {
-  background: radial-gradient(600px 300px at 50% -40px, rgba(139, 92, 246, 0.22), transparent 70%),
-    radial-gradient(500px 260px at 85% 0%, rgba(91, 140, 255, 0.12), transparent 70%);
+/* Condensed cockpit-placard display face (IBM Plex Sans, wdth axis) */
+.font-display {
+  font-stretch: 78%;
+  font-feature-settings: "kern" 1, "liga" 1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
-.text-gradient {
-  background: linear-gradient(90deg, #c4b5fd 0%, #8b5cf6 40%, #5b8cff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* Placard label: all-caps, tracked, condensed */
+.placard {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.45);
+/* Strip-chart paper: fine 8px grid with a major line every 40px */
+.chart-paper {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+}
+
+/* Hazard/recorder stripe used once, on the footer placard */
+.recorder-stripe {
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 10px, var(--fg) 10px 20px);
+}
+
+/* REC light — blinking square for running work */
+@keyframes rec-blink {
+  0%,
+  55% {
+    opacity: 1;
   }
+  56%,
   100% {
-    box-shadow: 0 0 0 8px rgba(139, 92, 246, 0);
+    opacity: 0.25;
   }
 }
-.pulse-ring {
-  animation: pulse-ring 1.4s ease-out infinite;
+.rec {
+  animation: rec-blink 1.2s steps(1) infinite;
 }
 
-/* Markdown report */
+/* Heartbeat trace for online workers */
+@keyframes trace {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+.trace {
+  stroke-dasharray: 120;
+  animation: trace 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec,
+  .trace {
+    animation: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Markdown report — reads like a printed incident/briefing document */
 .prose-report {
   color: var(--fg);
   line-height: 1.7;
-  font-size: 15px;
+  font-size: 15.5px;
+  max-width: 72ch;
 }
 .prose-report h1 {
-  font-size: 1.75rem;
-  font-weight: 650;
+  font-size: 2rem;
+  font-weight: 600;
+  font-stretch: 78%;
   letter-spacing: -0.02em;
+  line-height: 1.15;
   margin: 0 0 1rem;
+  text-wrap: balance;
 }
 .prose-report h2 {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 600;
-  margin: 2rem 0 0.75rem;
+  font-stretch: 82%;
+  margin: 2.25rem 0 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
 }
 .prose-report h3 {
   font-size: 1rem;
@@ -108,13 +203,13 @@ body {
   margin: 1.25rem 0 0.4rem;
 }
 .prose-report p {
-  margin: 0.5rem 0;
-  color: #d4d4e0;
+  margin: 0.6rem 0;
 }
 .prose-report a {
-  color: #a78bfa;
+  color: var(--fg);
   text-decoration: underline;
-  text-decoration-color: rgba(167, 139, 250, 0.35);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
   word-break: break-word;
 }
@@ -124,28 +219,30 @@ body {
   margin: 0.5rem 0;
 }
 .prose-report ul {
-  list-style: disc;
+  list-style: square;
 }
 .prose-report ol {
   list-style: decimal;
 }
 .prose-report li {
   margin: 0.3rem 0;
-  color: #d4d4e0;
+}
+.prose-report li::marker {
+  color: var(--fg-dim);
 }
 .prose-report blockquote {
-  border-left: 2px solid var(--violet);
+  border-left: 3px solid var(--accent);
   padding: 0.25rem 0 0.25rem 0.9rem;
   color: var(--fg-muted);
   margin: 0.75rem 0;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 .prose-report code {
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-plex-mono);
   font-size: 0.85em;
   background: var(--surface-2);
   padding: 0.1rem 0.35rem;
-  border-radius: 4px;
+  border-radius: 3px;
   word-break: break-all;
 }
 .prose-report table {
@@ -158,7 +255,7 @@ body {
 }
 .prose-report th,
 .prose-report td {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   padding: 0.45rem 0.6rem;
   text-align: left;
   vertical-align: top;
@@ -171,10 +268,10 @@ body {
   color: var(--fg-muted);
 }
 
-/* React Flow dark tweaks */
+/* React Flow */
 .react-flow__attribution {
   display: none;
 }
 .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.18);
+  stroke: var(--border-strong);
 }

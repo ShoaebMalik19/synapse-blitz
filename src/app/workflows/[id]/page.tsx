@@ -20,8 +20,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { Dag } from "@/components/dag";
+import { eventsToMarks, RecorderTape, TapeLegend } from "@/components/tape";
 import { Nav } from "@/components/nav";
-import { Badge, Button, ButtonLink, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge, cx } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, CardHeader, Dot, Empty, ErrorNote, Ext, Mono, Rec, Spinner, Stat, StatusBadge, cx } from "@/components/ui";
 import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, plannerLabel, shortHash, type EventRow, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
 
 const levelColor = { info: "text-muted", warn: "text-warn", error: "text-bad", success: "text-ok" } as const;
@@ -38,6 +39,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
   const [drill, setDrill] = useState(true);
   const [highValue, setHighValue] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [now, setNow] = useState(0);
   const lastId = useRef(0);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +57,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
         setEvents((prev) => [...prev, ...e.events]);
       }
       setErr(null);
+      setNow(Date.now());
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) router.push(`/login?next=/workflows/${id}`);
       else setErr((e as Error).message);
@@ -94,6 +97,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
   const done = wf.tasks.filter((t) => t.status === "COMPLETED").length;
   const sel = wf.tasks.find((t) => t.taskId === selected) ?? wf.tasks.find((t) => t.currentWorker) ?? null;
   const b = wf.budget.x402;
+  const tapeMarks = eventsToMarks(events);
 
   return (
     <Shell>
@@ -102,7 +106,8 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
           <Link href="/dashboard" className="mb-2 inline-flex items-center gap-1 text-xs text-dim hover:text-fg">
             <ArrowLeft className="size-3" /> Dashboard
           </Link>
-          <h1 className="text-lg font-semibold leading-snug tracking-tight sm:text-xl">{w.goal}</h1>
+          <p className="placard text-dim">Workflow {w.id}</p>
+          <h1 className="font-display mt-1 max-w-[40ch] text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold leading-tight">{w.goal}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] text-dim">
             <StatusBadge s={w.status} />
             <Badge t={w.settlementStatus === "SETTLED" ? "ok" : w.settlementStatus === "BLOCKED" || w.settlementStatus === "FAILED" ? "warn" : "muted"}>escrow {w.settlementStatus.replace(/_/g, " ")}</Badge>
@@ -137,7 +142,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
 
       {actionErr && <ErrorNote>{actionErr}</ErrorNote>}
       {w.settlementNote && (w.settlementStatus === "BLOCKED" || w.settlementStatus === "FAILED") && (
-        <div className="flex items-start gap-2 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn">
+        <div className="flex items-start gap-2 rounded-[4px] border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
             On-chain escrow {w.settlementStatus.toLowerCase()}: {w.settlementNote}
@@ -146,23 +151,23 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
       )}
 
       {w.plannerNotes.length > 0 && w.status === "APPROVAL_REQUIRED" && (
-        <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+        <div className="rounded-[4px] border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
           {w.plannerNotes.map((n) => (
             <div key={n}>{n}</div>
           ))}
         </div>
       )}
       {w.status === "APPROVAL_REQUIRED" && (
-        <Card className="border-violet/30">
+        <Card className="border-2 border-accent">
           <CardHeader title="Approve plan & budget" icon={<CheckCircle2 className="size-4" />} sub={w.plan.summary} />
           <div className="flex flex-wrap items-center justify-between gap-4 p-4">
             <div className="space-y-2 text-sm">
               <label className="flex items-center gap-2">
-                <input type="checkbox" checked={drill} onChange={(e) => setDrill(e.target.checked)} className="accent-[#8b5cf6]" />
+                <input type="checkbox" checked={drill} onChange={(e) => setDrill(e.target.checked)} className="accent-[var(--accent)]" />
                 Failure drill: crash Worker A after its first checkpoint
               </label>
               <label className="flex items-center gap-2 text-muted">
-                <input type="checkbox" checked={highValue} onChange={(e) => setHighValue(e.target.checked)} className="accent-[#8b5cf6]" />
+                <input type="checkbox" checked={highValue} onChange={(e) => setHighValue(e.target.checked)} className="accent-[var(--accent)]" />
                 Pre-approve purchases above the approval threshold (still bounded by per-call cap)
               </label>
               <div className="font-mono text-[11px] text-dim">
@@ -176,13 +181,40 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="p-4"><Stat label="Progress" value={`${done} / ${wf.tasks.length} tasks`} sub={w.status} /></Card>
-        <Card className="p-4"><Stat label="x402 confirmed" value={`${fmtUsdc(b.confirmedBase)} USDC`} sub={`cap ${fmtUsdc(b.capBase)} · est ${fmtUsdc(b.estimatedBase)}`} /></Card>
-        <Card className="p-4"><Stat label="Reserved / unknown" value={`${fmtUsdc(b.reservedBase)} / ${fmtUsdc(b.unknownBase)}`} sub={`released ${fmtUsdc(b.releasedBase)} · rejected ${fmtUsdc(b.rejectedBase)}`} /></Card>
-        <Card className="p-4"><Stat label="Escrow" value={`${fmtMon(wf.budget.escrow.capWei)} MON`} sub={w.settlementStatus} /></Card>
-        <Card className="p-4"><Stat label="Recoveries" value={wf.attempts.filter((a) => a.kind === "RECOVERY").length} sub={`${wf.checkpoints.length} checkpoints · ${wf.faults.filter((f) => f.status === "FIRED").length} faults fired`} /></Card>
-      </div>
+      <Card className="grid gap-px overflow-hidden bg-line-strong sm:grid-cols-2 lg:grid-cols-5 [&>*]:bg-surface [&>*]:p-4 sm:[&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1">
+        <Stat label="Progress" value={`${done} / ${wf.tasks.length} tasks`} sub={w.status.replace(/_/g, " ")} />
+        <Stat label="Data paid (x402)" value={`${fmtUsdc(b.confirmedBase)} USDC`} sub={`cap ${fmtUsdc(b.capBase)} · est ${fmtUsdc(b.estimatedBase)}`} />
+        <Stat label="Blocked by policy" value={`${fmtUsdc(b.rejectedBase)} USDC`} sub={`reserved ${fmtUsdc(b.reservedBase)} · unknown ${fmtUsdc(b.unknownBase)}`} />
+        <Stat label="Escrow" value={`${fmtMon(wf.budget.escrow.capWei)} MON`} sub={w.settlementStatus.replace(/_/g, " ")} />
+        <Stat label="Recoveries" value={wf.attempts.filter((a) => a.kind === "RECOVERY").length} sub={`${wf.checkpoints.length} checkpoints · ${wf.faults.filter((f) => f.status === "FIRED").length} faults fired`} />
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <div>
+            <div className="placard text-fg">Recorder tape</div>
+            <div className="mt-1 text-xs text-dim">Every recorded event, by actor. Hover a mark for details.</div>
+          </div>
+          <Rec on={!terminal} label={terminal ? "Recording closed" : "Recording"} />
+        </div>
+        {events.length ? (
+          <RecorderTape
+            marks={tapeMarks}
+            start={events[0].created_at}
+            end={terminal ? Math.max(events.at(-1)!.created_at, events[0].created_at + 1000) : Math.max(now, events.at(-1)!.created_at)}
+            live={!terminal}
+            caption={(m) => (
+              <div className="flex min-h-5 items-center gap-3 font-mono text-[12px]">
+                <span className="text-dim">{m ? clock(m.t) : "--:--:--"}</span>
+                <span className={cx("min-w-0 truncate", m?.kind === "crash" ? "font-semibold text-accent-ink" : m?.kind === "settle" ? "text-ok" : "text-fg")}>{m?.label ?? ""}</span>
+              </div>
+            )}
+          />
+        ) : (
+          <Empty>The tape starts when the workflow records its first event.</Empty>
+        )}
+        <TapeLegend className="border-t border-line px-4 py-2.5" />
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
         <Card>
@@ -211,12 +243,12 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
         </Card>
 
         <Card className="flex min-h-[360px] flex-col">
-          <CardHeader title="Live event timeline" icon={<ScrollText className="size-4" />} right={<span className="font-mono text-[10px] text-dim">{events.length} events</span>} />
+          <CardHeader title="Event log" icon={<ScrollText className="size-4" />} right={<span className="font-mono text-[10px] text-dim">{events.length} events</span>} />
           <div ref={logRef} className="max-h-[440px] flex-1 space-y-0 overflow-y-auto px-2 py-2 font-mono text-[11.5px]">
             {events.map((e) => (
-              <div key={e.id} className={cx("flex gap-2 rounded px-2 py-1 hover:bg-white/[0.03]", e.type === "worker.crash" && "bg-bad/10", e.type.startsWith("checkpoint.loaded") && "bg-ok/10")}>
+              <div key={e.id} className={cx("flex gap-2 rounded px-2 py-1 hover:bg-fg/[0.04]", e.type === "worker.crash" && "bg-accent/15 font-medium text-fg", e.type.startsWith("checkpoint.loaded") && "bg-ok/10")}>
                 <span className="shrink-0 text-dim">{clock(e.created_at)}</span>
-                <span className={cx("shrink-0", e.worker_id === "worker-a" ? "text-blue" : e.worker_id === "worker-b" ? "text-[#c4b5fd]" : "text-dim")}>{e.worker_id ? e.worker_id.replace("worker-", "W·") : "orch"}</span>
+                <span className={cx("shrink-0", e.worker_id === "worker-a" ? "text-blue" : e.worker_id === "worker-b" ? "text-wb" : "text-dim")}>{e.worker_id ? e.worker_id.replace("worker-", "W·") : "orch"}</span>
                 <span className={cx("min-w-0 break-words", levelColor[e.level])}>
                   {e.message}
                   {typeof e.data?.explorer === "string" && (
@@ -253,7 +285,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
                         <div className="flex flex-wrap items-center gap-2 text-sm">
                           <span className="font-mono text-xs">#{a.attempt_no}</span>
                           <Badge t={a.kind === "RECOVERY" ? "warn" : "muted"}>{a.kind}</Badge>
-                          <span className={a.worker_id === "worker-a" ? "text-blue" : "text-[#c4b5fd]"}>{a.worker_id}</span>
+                          <span className={a.worker_id === "worker-a" ? "text-blue" : "text-wb"}>{a.worker_id}</span>
                           <StatusBadge s={a.status} />
                           <span className="font-mono text-[10.5px] text-dim">{clock(a.started_at)}{a.ended_at ? ` → ${clock(a.ended_at)}` : ""}</span>
                         </div>
@@ -309,7 +341,7 @@ export default function WorkflowPage({ params }: { params: Promise<{ id: string 
               <div key={e.id} className="px-4 py-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Badge t="violet">
+                    <Badge t="ink">
                       <Landmark className="size-3" /> escrow
                     </Badge>
                     <span className="font-mono text-xs">{e.action}</span>

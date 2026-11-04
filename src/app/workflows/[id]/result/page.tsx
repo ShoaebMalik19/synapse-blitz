@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, BadgeCheck, CircleDollarSign, Download, Landmark, Library, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CircleDollarSign, Download, Landmark, Library, Link2, ShieldCheck, Users } from "lucide-react";
+import { EvidenceChain } from "@/components/evidence";
 import { Nav } from "@/components/nav";
 import { Badge, Card, CardHeader, Empty, ErrorNote, Ext, Mono, Spinner, Stat, StatusBadge } from "@/components/ui";
 import { api, ApiError, clock, fmtMon, fmtUsdc, paymentLabel, shortHash, type PaymentsResponse, type WorkflowDetail } from "@/lib/client";
@@ -47,6 +48,9 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
   const accept = r.escrow.find((e) => e.action === "ACCEPT");
   const allPassed = r.verifications.length > 0 && r.verifications.every((v) => v.passed);
   const hashMatch = r.onchainEscrowTask && synth?.resultHash ? r.onchainEscrowTask.resultHash.toLowerCase() === synth.resultHash.toLowerCase() : null;
+  const av = accept?.verification as { eventFound?: boolean; resultHashMatches?: boolean; eventResultHash?: string; onchainState?: string } | null | undefined;
+  const synthVerified = r.verifications.find((v) => v.taskId === synth?.taskId)?.passed;
+  const settled = r.onchainEscrowTask?.stateName === "Settled";
 
   return (
     <Shell>
@@ -55,15 +59,16 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
           <Link href={`/workflows/${id}`} className="mb-2 inline-flex items-center gap-1 text-xs text-dim hover:text-fg">
             <ArrowLeft className="size-3" /> Execution view
           </Link>
-          <h1 className="text-xl font-semibold tracking-tight">Final briefing</h1>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <p className="placard text-dim">Deliverable · {id}</p>
+          <h1 className="font-display mt-1 text-[clamp(1.9rem,3.2vw,2.6rem)] font-semibold leading-none">Final briefing</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusBadge s={r.workflow.status} />
             <Badge t={allPassed ? "ok" : "bad"}>{allPassed ? "all verification checks passed" : "verification incomplete"}</Badge>
             <Badge t={r.workflow.settlementStatus === "SETTLED" ? "ok" : "warn"}>escrow {r.workflow.settlementStatus}</Badge>
           </div>
         </div>
         {r.report && (
-          <a href={`/api/workflows/${id}/result?format=md`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-line-strong bg-white/[0.02] px-3 text-sm hover:bg-white/[0.06]">
+          <a href={`/api/workflows/${id}/result?format=md`} className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-line-strong bg-surface px-4 text-sm font-medium hover:border-fg/40">
             <Download className="size-4" /> Download Markdown
           </a>
         )}
@@ -72,11 +77,11 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
         <Card className="min-w-0">
           {r.report ? (
-            <article className="prose-report px-5 py-6 sm:px-8">
+            <article className="prose-report px-5 py-8 sm:px-10">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: (p) => <a {...p} target="_blank" rel="noreferrer noopener" /> }}>
                 {r.report.markdown}
               </ReactMarkdown>
-              <div className="mt-8 border-t border-line pt-3 font-mono text-[11px] text-dim">artifact sha256 {r.report.sha256}</div>
+              <div className="mt-10 border-t-2 border-fg pt-3 font-mono text-[11px] break-all text-dim">report sha256 {r.report.sha256}</div>
             </article>
           ) : (
             <Empty>The report is not ready yet. Workflow status: {r.workflow.status}.</Empty>
@@ -84,6 +89,27 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
         </Card>
 
         <div className="space-y-4">
+          <Card className="border-2 border-fg">
+            <CardHeader title="Proof chain" icon={<Link2 />} sub="From the worker's output to the payout on Monad. Each link is checked." />
+            <div className="p-4">
+              <EvidenceChain
+                steps={[
+                  { label: "Briefing artifact", value: synth?.resultHash, state: synth?.resultHash ? (synthVerified === false ? "bad" : "ok") : "pending", detail: synthVerified ? "Passed every verification check" : undefined },
+                  { label: "Committed on Monad", value: r.onchainEscrowTask?.resultHash, matchesPrev: hashMatch, state: hashMatch === true ? "ok" : hashMatch === false ? "bad" : "pending", detail: "submitResult by Worker B" },
+                  {
+                    label: "Accepted by requester",
+                    value: av?.eventResultHash ?? accept?.tx_hash,
+                    href: accept?.explorer_url,
+                    matchesPrev: av?.resultHashMatches ?? null,
+                    state: av?.eventFound && av.resultHashMatches ? "ok" : av ? "bad" : "pending",
+                    detail: "TaskSettled event read back from the chain",
+                  },
+                  { label: "Escrow state", value: r.onchainEscrowTask?.stateName ?? null, state: settled ? "ok" : "pending", detail: settled ? "MON released to the payee" : "Waiting for settlement" },
+                ]}
+              />
+            </div>
+          </Card>
+
           <Card>
             <CardHeader title="Settlement evidence" icon={<Landmark className="size-4" />} sub="Read back from Monad testnet" />
             <div className="space-y-3 p-4 text-sm">
@@ -114,7 +140,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 ))}
               </ul>
               {accept?.verification && (
-                <div className="rounded-md border border-line bg-elev p-2 font-mono text-[10.5px] leading-relaxed text-dim">
+                <div className="rounded-[3px] border border-line bg-bg p-2 font-mono text-[10.5px] leading-relaxed text-dim">
                   event TaskSettled: {String(accept.verification.eventFound)} · hash match: {String(accept.verification.resultHashMatches)} · state: {String(accept.verification.onchainState)}
                 </div>
               )}
@@ -182,7 +208,7 @@ export default function ResultPage({ params }: { params: Promise<{ id: string }>
                 <li key={a.id} className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-dim">{clock(a.started_at)}</span>
                   <span className="font-mono">{a.task_id}</span>
-                  <span className={a.worker_id === "worker-a" ? "text-blue" : "text-[#c4b5fd]"}>{a.worker_id}</span>
+                  <span className={a.worker_id === "worker-a" ? "text-blue" : "text-wb"}>{a.worker_id}</span>
                   <Badge t={a.kind === "RECOVERY" ? "warn" : "muted"}>{a.kind}</Badge>
                   <StatusBadge s={a.status} />
                 </li>

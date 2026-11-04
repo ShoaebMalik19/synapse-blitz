@@ -14,12 +14,12 @@ function TaskNode({ data }: NodeProps<Node<TaskNodeData>>) {
   return (
     <div
       className={cx(
-        "w-[230px] rounded-xl border bg-surface px-3 py-2.5 text-left shadow-[0_8px_30px_-12px_rgba(0,0,0,0.8)] transition-colors",
-        active ? "border-violet/60" : t.status === "RECOVERING" ? "border-warn/50" : t.status === "COMPLETED" ? "border-ok/30" : t.status === "FAILED" ? "border-bad/50" : "border-line-strong",
-        data.selected && "ring-2 ring-violet/40",
+        "w-[230px] rounded-[4px] border-2 bg-surface px-3 py-2.5 text-left shadow-[var(--shadow)] transition-colors",
+        active ? "border-blue" : t.status === "RECOVERING" ? "border-warn" : t.status === "COMPLETED" ? "border-ok/60" : t.status === "FAILED" ? "border-bad" : "border-line-strong",
+        data.selected && "ring-2 ring-accent ring-offset-2 ring-offset-bg",
       )}
     >
-      <Handle type="target" position={Position.Left} className="!size-2 !border-0 !bg-white/30" />
+      <Handle type="target" position={Position.Left} className="!size-2 !border-0 !bg-[var(--fg-dim)]" />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-wider text-dim">{t.capability}</span>
         <StatusBadge s={t.status} />
@@ -29,7 +29,7 @@ function TaskNode({ data }: NodeProps<Node<TaskNodeData>>) {
         <Dot s={t.currentWorker ? "RUNNING" : t.status} />
         <span className="truncate">{t.currentWorker ? `${t.currentWorker} · ${t.currentStep ?? ""}` : t.status === "COMPLETED" ? `done · ${t.attempts} attempt${t.attempts === 1 ? "" : "s"}` : "unassigned"}</span>
       </div>
-      <Handle type="source" position={Position.Right} className="!size-2 !border-0 !bg-white/30" />
+      <Handle type="source" position={Position.Right} className="!size-2 !border-0 !bg-[var(--fg-dim)]" />
     </div>
   );
 }
@@ -65,7 +65,7 @@ export function Dag({ tasks, selected, onSelect }: { tasks: TaskView[]; selected
           source: dep,
           target: t.taskId,
           animated: live,
-          style: { stroke: live ? "#8b5cf6" : byId.get(dep)?.status === "COMPLETED" ? "rgba(52,211,153,0.5)" : "rgba(255,255,255,0.18)", strokeWidth: 1.5 },
+          style: { stroke: live ? "var(--blue)" : byId.get(dep)?.status === "COMPLETED" ? "var(--green)" : "var(--border-strong)", strokeWidth: 1.75 },
         };
       }),
     );
@@ -84,12 +84,11 @@ export function Dag({ tasks, selected, onSelect }: { tasks: TaskView[]; selected
         nodesConnectable={false}
         proOptions={{ hideAttribution: true }}
         onNodeClick={(_, n) => onSelect?.(n.id)}
-        colorMode="dark"
         style={{ background: "transparent" }}
         minZoom={0.4}
         maxZoom={1.4}
       >
-        <Background color="rgba(255,255,255,0.05)" gap={22} />
+        <Background color="var(--grid-major)" gap={24} />
       </ReactFlow>
     </div>
   );
