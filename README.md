@@ -201,7 +201,7 @@ Issues and PRs are welcome. Good first areas: per-node escrow for every DAG node
 
 ## License
 
-[MIT](LICENSE) © 2026 Synapse contributors. The `TaskEscrow` contract is also MIT (`SPDX-License-Identifier: MIT`).
+[MIT](LICENSE) © 2026 Synapse contributors. The `TaskEscrow` contract is also MIT (`SPDX-License-Identifier: MIT`). Excluded: `docs/BLITZ_SUBMISSION_PROCESS.md` and `screenshots/` come from the organizers' starter repo and belong to them.
 
 ---
 
