@@ -67,7 +67,7 @@ export default function Home() {
             <Link href="#tape" className="hidden px-2 py-2 text-[13px] font-medium text-muted hover:text-fg sm:inline">
               The recording
             </Link>
-            <Link href="https://github.com/ShoaebMalik19/synapse" className="hidden px-2 py-2 text-[13px] font-medium text-muted hover:text-fg sm:inline">
+            <Link href="https://github.com/ShoaebMalik19/synapse-blitz" className="hidden px-2 py-2 text-[13px] font-medium text-muted hover:text-fg sm:inline">
               GitHub
             </Link>
             <ThemeToggle />

@@ -1,5 +1,7 @@
 # Synapse
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Monad Testnet](https://img.shields.io/badge/Monad-testnet-836EF9)](https://testnet.monadvision.com/address/0x097dc98f0cfcb46d98569bac7f987c8e22359f10) [![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://synapse-blitz.vercel.app/replay)
+
 **Agents that plan, pay, crash, recover and get paid, with every payment and payout settled on Monad.**
 
 > Monad Blitz Mumbai [Devcon Edition] submission · hackathon prototype · **Monad testnet only**
@@ -192,6 +194,14 @@ scripts/              orchestrator / worker / supervisor processes, deploy, stat
 tests/                Vitest (unit) and Playwright (e2e)
 deployments/          on-chain deployment records
 ```
+
+## Contributing
+
+Issues and PRs are welcome. Good first areas: per-node escrow for every DAG node, a permissionless worker registry, networked (multi-host) workers, and new x402-paid data sources. Run `npm test`, `npm run test:contracts` and `npm run lint` before opening a PR.
+
+## License
+
+[MIT](LICENSE) © 2026 Synapse contributors. The `TaskEscrow` contract is also MIT (`SPDX-License-Identifier: MIT`).
 
 ---
 
